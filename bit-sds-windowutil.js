@@ -246,6 +246,14 @@ Ext.define("BIT.SDS._WindowUtil", {
         return this.getWindowSizesPromise(this.getAllAppNames());
     },
 
+    printAllWindowSizes: function() {
+        BIT.SDS.WindowUtil.getAllWindowSizesPromise().then(function(results) {
+            Ext.each(results, function(result) {
+                console.log(this.appName + "," + this.width + "," + this.height);
+            });
+        });
+    },
+
     suggestWindowRegion: function() {
         var x;
         var y;
