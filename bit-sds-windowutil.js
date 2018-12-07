@@ -198,6 +198,13 @@ Ext.define("BIT.SDS._WindowUtil", {
                 if (Ext.isObject(appInstance)) {
                     windowSize = new BIT.SDS.AppWindowSize(appName, appInstance.window.getWidth(), appInstance.window.getHeight());
                     resolve(windowSize);
+                } else {
+                    appInstances = SYNO.SDS.AppMgr.getByAppName(appName);
+
+                    if (appInstances.length > 0) {
+                        windowSize = new BIT.SDS.AppWindowSize(appName, appInstances[0].window.getWidth(), appInstances[0].window.getHeight());
+                        resolve(windowSize);
+                    }
                 }
             }, this]);
         });
