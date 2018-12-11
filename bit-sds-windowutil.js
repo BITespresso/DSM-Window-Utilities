@@ -458,12 +458,12 @@ Ext.define("BIT.SDS.Promise", {
     },
 
     state: undefined,
-    reactions: undefined,
+    clients: undefined,
     result: undefined,
 
     constructor: function(executor) {
         this.state = BIT.SDS.Promise.state.pending;
-        this.reactions = [];
+        this.clients = [];
         this.result = undefined;
 
         function resolve(value) {
@@ -518,13 +518,13 @@ Ext.define("BIT.SDS.Promise", {
         this.state = BIT.SDS.Promise.state.fulfilled;
         this.result = value;
 
-        function fulfillAllReactions() {
-            for (var i = 0; i < this.reactions.length; i++) {
-                this.reactions[i].fulfillReaction(value);
+        function fulfillAllClients() {
+            for (var i = 0; i < this.clients.length; i++) {
+                this.clients[i].fulfillClient(value);
             }
         }
 
-        setTimeout(fulfillAllReactions.createDelegate(this));
+        setTimeout(fulfillAllClients.createDelegate(this));
     },
 
     reject: function(reason) {
@@ -533,23 +533,23 @@ Ext.define("BIT.SDS.Promise", {
         this.state = BIT.SDS.Promise.state.rejected;
         this.result = reason;
 
-        function rejectAllReactions() {
-            for (var i = 0; i < this.reactions.length; i++) {
-                this.reactions[i].rejectReaction(reason);
+        function rejectAllClients() {
+            for (var i = 0; i < this.clients.length; i++) {
+                this.clients[i].rejectClient(reason);
             }
         }
 
-        setTimeout(rejectAllReactions.createDelegate(this));
+        setTimeout(rejectAllClients.createDelegate(this));
     },
 
     then: function(onFulfilled, onRejected) {
         var promise = new BIT.SDS.Promise();
-        var reaction = {
+        var client = {
             onFulfilled: onFulfilled,
             onRejected: onRejected,
             promise: promise,
 
-            fulfillReaction: function(result) {
+            fulfillClient: function(result) {
                 if (Ext.isFunction(this.onFulfilled)) {
                     try {
                         var value = this.onFulfilled.call(undefined, result);
@@ -562,7 +562,7 @@ Ext.define("BIT.SDS.Promise", {
                 }
             },
 
-            rejectReaction: function(result) {
+            rejectClient: function(result) {
                 if (Ext.isFunction(this.onRejected)) {
                     try {
                         var value = this.onRejected.call(undefined, result);
@@ -578,15 +578,15 @@ Ext.define("BIT.SDS.Promise", {
 
         switch (this.state) {
         case BIT.SDS.Promise.state.pending:
-            this.reactions.push(reaction);
+            this.clients.push(client);
             break;
 
         case BIT.SDS.Promise.state.fulfilled:
-            setTimeout(reaction.fulfillReaction.createDelegate(reaction, [this.result]));
+            setTimeout(client.fulfillClient.createDelegate(client, [this.result]));
             break;
 
         case BIT.SDS.Promise.state.rejected:
-            setTimeout(reaction.rejectReaction.createDelegate(reaction, [this.result]));
+            setTimeout(client.rejectClient.createDelegate(client, [this.result]));
             break;
         }
 
