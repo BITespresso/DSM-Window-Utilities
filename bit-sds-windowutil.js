@@ -461,7 +461,7 @@ Ext.define("BIT.SDS.Promise", {
     clients: undefined,
     result: undefined,
 
-    constructor: function(executor) {
+    constructor: function(resolver) {
         this.state = BIT.SDS.Promise.state.pending;
         this.clients = [];
         this.result = undefined;
@@ -474,7 +474,7 @@ Ext.define("BIT.SDS.Promise", {
             this.reject(reason);
         }
 
-        if (Ext.isFunction(executor)) executor(resolve.createDelegate(this), reject.createDelegate(this));
+        if (Ext.isFunction(resolver)) resolver(resolve.createDelegate(this), reject.createDelegate(this));
     },
 
     resolve: function(value) {
