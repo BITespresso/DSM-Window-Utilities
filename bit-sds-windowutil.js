@@ -458,9 +458,9 @@ Ext.define("BIT.SDS.Promise", {
 
         race: function(promises) {
             var promiseForRace = new BIT.SDS.Promise(function(resolve, reject) {
-                for (var i = 0; i < promises.length; i++) {
-                    promises[i].then(resolve, reject);
-                }
+                Ext.each(promises, function(promise) {
+                    promise.then(resolve, reject);
+                }, this);
             });
 
             return promiseForRace;
