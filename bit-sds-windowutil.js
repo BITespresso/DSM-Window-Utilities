@@ -454,6 +454,16 @@ Ext.define("BIT.SDS.Promise", {
             if (promises.length === 0) promiseForAll.resolve(results);
 
             return promiseForAll;
+        },
+
+        race: function(promises) {
+            var promiseForRace = new BIT.SDS.Promise(function(resolve, reject) {
+                for (var i = 0; i < promises.length; i++) {
+                    promises[i].then(resolve, reject);
+                }
+            });
+
+            return promiseForRace;
         }
     },
 
