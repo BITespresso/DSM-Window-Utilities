@@ -537,9 +537,9 @@ Ext.define("BIT.SDS.Promise", {
         this.result = value;
 
         function fulfillAllClients() {
-            for (var i = 0; i < this.clients.length; i++) {
-                this.clients[i].fulfillClient(value);
-            }
+            Ext.each(this.clients, function(client) {
+                client.fulfillClient(value);
+            }, this);
         }
 
         setTimeout(fulfillAllClients.createDelegate(this));
@@ -552,9 +552,9 @@ Ext.define("BIT.SDS.Promise", {
         this.result = reason;
 
         function rejectAllClients() {
-            for (var i = 0; i < this.clients.length; i++) {
-                this.clients[i].rejectClient(reason);
-            }
+            Ext.each(this.clients, function(client) {
+                client.rejectClient(reason);
+            }, this);
         }
 
         setTimeout(rejectAllClients.createDelegate(this));
