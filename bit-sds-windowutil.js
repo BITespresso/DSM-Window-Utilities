@@ -447,9 +447,9 @@ Ext.define("BIT.SDS.Promise", {
                 promise.then(onFulfilled, onRejected);
             }
 
-            for (var i = 0; i < promises.length; i++) {
-                resolvePromise(promises[i], i);
-            }
+            Ext.each(promises, function(promise, i) {
+                resolvePromise(promise, i);
+            }, this);
 
             if (promises.length === 0) promiseForAll.resolve(results);
 
