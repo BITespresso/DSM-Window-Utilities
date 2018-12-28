@@ -204,6 +204,8 @@ Ext.define("BIT.SDS._WindowUtil", {
                     if (appInstances.length > 0) {
                         windowSize = new BIT.SDS.AppWindowSize(appName, appInstances[0].window.getWidth(), appInstances[0].window.getHeight());
                         resolve(windowSize);
+                    } else {
+                        reject(Error("failed to launch " + appName));
                     }
                 }
             }, this]);
