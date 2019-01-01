@@ -473,6 +473,28 @@ Ext.define("BIT.SDS.Promise", {
             });
 
             return promiseForRace;
+        },
+
+        retry: function(fn, times, delay) {
+            var promiseForRetry = new BIT.SDS.Promise(function(resolve, reject) {
+                var lastRejectReason;
+                var retry = function() {
+                    if (times > 0) {
+                        times--;
+                        fn()
+                            .then(resolve)
+                            .catch(function(reason) {
+                                lastRejectReason = reason;
+                                setTimeout(retry, delay);
+                            });
+                    } else {
+                        reject(lastRejectReason);
+                    }
+                };
+                retry();
+            });
+
+            return promiseForRetry;
         }
     },
 
