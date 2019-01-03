@@ -205,7 +205,7 @@ Ext.define("BIT.SDS._WindowUtil", {
                         windowSize = new BIT.SDS.AppWindowSize(appName, appInstances[0].window.getWidth(), appInstances[0].window.getHeight());
                         resolve(windowSize);
                     } else {
-                        reject(Error("failed to launch " + appName));
+                        reject(Error("Failed to launch " + appName));
                     }
                 }
             }, this]);
@@ -251,7 +251,7 @@ Ext.define("BIT.SDS._WindowUtil", {
 
         rejectAfterTimeoutPromise = new BIT.SDS.Promise(function(resolve, reject) {
             setTimeout(function() {
-                reject(Error("operation timed out"));
+                reject(Error("Operation timed out"));
             }, launchDelay + 9000);
         });
 
@@ -526,7 +526,7 @@ Ext.define("BIT.SDS.Promise", {
                 this.reject(error);
             }
         } else if (arguments.length > 0) {
-            throw Error("promise resolver " + resolver + " is not a function");
+            throw Error("Promise resolver " + resolver + " is not a function");
         }
     },
 
@@ -550,7 +550,7 @@ Ext.define("BIT.SDS.Promise", {
 
         if (this.state !== BIT.SDS.Promise.state.pending) return;
 
-        if (value === this) return this.reject(Error("a promise cannot be resolved by itself"));
+        if (value === this) return this.reject(Error("A promise cannot be resolved by itself"));
 
         if (value && (Ext.isFunction(value) || Ext.isObject(value))) {
             try {
