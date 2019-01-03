@@ -522,8 +522,8 @@ Ext.define("BIT.SDS.Promise", {
         if (Ext.isFunction(resolver)) {
             try {
                 resolver(resolve.createDelegate(this), reject.createDelegate(this));
-            } catch (exception) {
-                this.reject(exception);
+            } catch (error) {
+                this.reject(error);
             }
         } else if (arguments.length > 0) {
             throw Error("promise resolver " + resolver + " is not a function");
@@ -561,8 +561,8 @@ Ext.define("BIT.SDS.Promise", {
 
                     return;
                 }
-            } catch (exception) {
-                if (!alreadyCalled) this.reject(exception);
+            } catch (error) {
+                if (!alreadyCalled) this.reject(error);
 
                 return;
             }
