@@ -263,11 +263,15 @@ Ext.define("BIT.SDS._WindowUtil", {
     },
 
     printAllWindowSizes: function() {
-        BIT.SDS.WindowUtil.getAllWindowSizesPromise().then(function(results) {
-            Ext.each(results, function(result) {
-                console.log(this.appName + "," + this.width + "," + this.height);
+        BIT.SDS.Promise.retry(BIT.SDS.WindowUtil.getAllWindowSizesPromise.createDelegate(this), 5, 5000)
+            .then(function(results) {
+                Ext.each(results, function(result) {
+                    console.log(this.appName + "," + this.width + "," + this.height);
+                });
+            })
+            .catch(function(reason) {
+                console.log("Error retrieving window sizes: " + ((reason instanceof Error) ? reason.message : reason));
             });
-        });
     },
 
     suggestWindowRegion: function() {
