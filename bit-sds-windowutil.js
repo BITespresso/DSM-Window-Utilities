@@ -335,7 +335,7 @@ Ext.define("BIT.SDS._WindowUtil", {
         }
         windowRegionLiteral = windowRegionLiteral.slice(0, -2) + "}";
 
-        console.log("INFO: Suggested windowRegion = " + windowRegionLiteral);
+        console.log("Using suggested window region: windowRegion = " + windowRegionLiteral);
 
         return windowRegion;
     },
