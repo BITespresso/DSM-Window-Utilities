@@ -216,6 +216,7 @@ Ext.define("BIT.SDS._WindowUtil", {
         var rejectAfterTimeoutPromise;
         var promises = [];
         var launchDelay = 0;
+        var launchDelayIncrement = 0;
 
         Ext.each(appNames, function(appName) {
             var restoreSizePosPropertyName = this.getRestoreSizePosPropertyName(appName);
@@ -243,8 +244,9 @@ Ext.define("BIT.SDS._WindowUtil", {
             installedAppNames = SYNO.SDS.AppUtil.getApps();
 
             if (installedAppNames.indexOf(appName) !== -1) {
+                launchDelay += launchDelayIncrement;
                 promises.push(this.getWindowSizeByLaunchingAppPromise(appName, launchDelay));
-                launchDelay += 1000;
+                launchDelayIncrement = 1000;
                 return;
             }
         }, this);
@@ -252,7 +254,7 @@ Ext.define("BIT.SDS._WindowUtil", {
         rejectAfterTimeoutPromise = new BIT.SDS.Promise(function(resolve, reject) {
             setTimeout(function() {
                 reject(Error("Operation timed out"));
-            }, launchDelay + 9000);
+            }, launchDelay + 10000);
         });
 
         return BIT.SDS.Promise.race([BIT.SDS.Promise.all(promises), rejectAfterTimeoutPromise]);
