@@ -439,34 +439,29 @@ Ext.define("BIT.SDS.Promise", {
         },
 
         all: function(promises) {
-            var promiseForAll = new BIT.SDS.Promise();
-            var results = [];
-            var resolved = 0;
+            var promiseForAll = new BIT.SDS.Promise(function(resolve, reject) {
+                var results = [];
+                var resolved = 0;
 
-            function resolvePromise(promise, i) {
-                if (!promise || !Ext.isFunction(promise.then)) {
-                    promise = BIT.SDS.Promise.resolve(promise);
-                }
+                Ext.each(promises, function(promise, i) {
+                    if (!promise || !Ext.isFunction(promise.then)) {
+                        promise = BIT.SDS.Promise.resolve(promise);
+                    }
 
-                function onFulfilled(value) {
-                    results[i] = value;
-                    resolved++;
+                    promise
+                        .then(function(value) {
+                            results[i] = value;
+                            resolved++;
 
-                    if (resolved === promises.length) promiseForAll.resolve(results);
-                }
+                            if (resolved === promises.length) resolve(results);
+                        })
+                        .catch(function(reason) {
+                            reject(reason);
+                        });
+                }, this);
 
-                function onRejected(reason) {
-                    promiseForAll.reject(reason);
-                }
-
-                promise.then(onFulfilled, onRejected);
-            }
-
-            Ext.each(promises, function(promise, i) {
-                resolvePromise(promise, i);
-            }, this);
-
-            if (promises.length === 0) promiseForAll.resolve(results);
+                if (promises.length === 0) resolve(results);
+            });
 
             return promiseForAll;
         },
