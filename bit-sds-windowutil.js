@@ -423,23 +423,19 @@ Ext.define("BIT.SDS.Promise", {
         },
 
         resolve: function(value) {
-            var promise = new BIT.SDS.Promise();
-
-            promise.resolve(value);
-
-            return promise;
+            return new BIT.SDS.Promise(function(resolve, reject) {
+                resolve(value);
+            });
         },
 
         reject: function(reason) {
-            var promise = new BIT.SDS.Promise();
-
-            promise.reject(reason);
-
-            return promise;
+            return new BIT.SDS.Promise(function(resolve, reject) {
+                reject(reason);
+            });
         },
 
         all: function(promises) {
-            var promiseForAll = new BIT.SDS.Promise(function(resolve, reject) {
+            return new BIT.SDS.Promise(function(resolve, reject) {
                 var results = [];
                 var resolved = 0;
 
@@ -462,22 +458,18 @@ Ext.define("BIT.SDS.Promise", {
 
                 if (promises.length === 0) resolve(results);
             });
-
-            return promiseForAll;
         },
 
         race: function(promises) {
-            var promiseForRace = new BIT.SDS.Promise(function(resolve, reject) {
+            return new BIT.SDS.Promise(function(resolve, reject) {
                 Ext.each(promises, function(promise) {
                     promise.then(resolve, reject);
                 }, this);
             });
-
-            return promiseForRace;
         },
 
         retry: function(fn, times, delay) {
-            var promiseForRetry = new BIT.SDS.Promise(function(resolve, reject) {
+            return new BIT.SDS.Promise(function(resolve, reject) {
                 var lastRejectReason;
                 var retry = function() {
                     if (times > 0) {
@@ -494,8 +486,6 @@ Ext.define("BIT.SDS.Promise", {
                 };
                 retry();
             });
-
-            return promiseForRetry;
         }
     },
 
