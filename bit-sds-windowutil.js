@@ -280,13 +280,13 @@ Ext.define("BIT.SDS._WindowUtil", {
             });
     },
 
-    suggestWindowRegion: function() {
+    suggestRegion: function() {
         var x;
         var y;
         var width;
         var height;
-        var windowRegion;
-        var windowRegionLiteral;
+        var region;
+        var regionLiteral;
 
         var taskbarHeight = Ext.get("sds-taskbar").getHeight();
         var desktopShortcutsWidth = Ext.select("li.launch-icon").first().getWidth() + (2 * Ext.select("ul.sds-desktop-shortcut").first().getMargins("l"));
@@ -326,43 +326,43 @@ Ext.define("BIT.SDS._WindowUtil", {
         width  -= width  % 5;
         height -= height % 5;
 
-        windowRegion = {
+        region = {
             x:      x,
             y:      y,
             width:  width,
             height: height
         };
 
-        windowRegionLiteral = "{";
-        for (var property in windowRegion) {
-            if (windowRegion.hasOwnProperty(property)) {
-                windowRegionLiteral += property + ": " + windowRegion[property] + ", ";
+        regionLiteral = "{";
+        for (var property in region) {
+            if (region.hasOwnProperty(property)) {
+                regionLiteral += property + ": " + region[property] + ", ";
             }
         }
-        windowRegionLiteral = windowRegionLiteral.slice(0, -2) + "}";
+        regionLiteral = regionLiteral.slice(0, -2) + "}";
 
-        console.log("Using suggested window region: windowRegion = " + windowRegionLiteral);
+        console.log("Using suggested region: region = " + regionLiteral);
 
-        return windowRegion;
+        return region;
     },
 
-    cascadeOverlapAllWindows: function(windowRegion) {
-        var windowRegionBottomRightCorner;
+    cascadeOverlapAllWindows: function(region) {
+        var regionBottomRightCorner;
         var offsetX;
         var offsetY;
 
         var dsmVersion = this.getDsmVersion();
 
-        if (!Ext.isObject(windowRegion)) {
-            windowRegion = this.suggestWindowRegion();
+        if (!Ext.isObject(region)) {
+            region = this.suggestRegion();
         }
 
-        offsetX = windowRegion.x;
-        offsetY = windowRegion.y;
+        offsetX = region.x;
+        offsetY = region.y;
 
-        windowRegionBottomRightCorner = {
-            x: windowRegion.x + windowRegion.width,
-            y: windowRegion.y + windowRegion.height
+        regionBottomRightCorner = {
+            x: region.x + region.width,
+            y: region.y + region.height
         };
 
         Ext.each(this.appWindowDataList, function(appWindowData) {
@@ -375,19 +375,19 @@ Ext.define("BIT.SDS._WindowUtil", {
                 y: offsetY + appWindowData.maxInitialWindowHeight
             };
 
-            if (windowBottomRightCorner.x > windowRegionBottomRightCorner.x && windowBottomRightCorner.y > windowRegionBottomRightCorner.y) {
-                offsetX = windowRegion.x;
-                offsetY = windowRegion.y;
+            if (windowBottomRightCorner.x > regionBottomRightCorner.x && windowBottomRightCorner.y > regionBottomRightCorner.y) {
+                offsetX = region.x;
+                offsetY = region.y;
             } else {
-                if (windowBottomRightCorner.x > windowRegionBottomRightCorner.x) {
-                    if (offsetX === windowRegion.x) {
-                        offsetY = windowRegion.y;
+                if (windowBottomRightCorner.x > regionBottomRightCorner.x) {
+                    if (offsetX === region.x) {
+                        offsetY = region.y;
                     }
-                    offsetX = windowRegion.x;
+                    offsetX = region.x;
                 } else {
-                    if (windowBottomRightCorner.y > windowRegionBottomRightCorner.y) {
+                    if (windowBottomRightCorner.y > regionBottomRightCorner.y) {
                         // offsetX += 30;
-                        offsetY = windowRegion.y;
+                        offsetY = region.y;
                     }
                 }
             }
