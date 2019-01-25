@@ -18,6 +18,16 @@ Ext.define("BIT.SDS.AppWinSize", {
     }
 });
 
+Ext.namespace("BIT.SDS.Util");
+
+Ext.define("BIT.SDS.Util", {
+    statics: {
+        getDsmVersion: function() {
+            return _S("majorversion") + "." + _S("minorversion");
+        }
+    }
+});
+
 Ext.namespace("BIT.SDS._WindowUtil");
 
 Ext.define("BIT.SDS._WindowUtil", {
@@ -108,13 +118,9 @@ Ext.define("BIT.SDS._WindowUtil", {
         }, this);
     },
 
-    getDsmVersion: function() {
-        return _S("majorversion") + "." + _S("minorversion");
-    },
-
     getAllAppNames: function() {
         var appNames = [];
-        var dsmVersion = this.getDsmVersion();
+        var dsmVersion = BIT.SDS.Util.getDsmVersion();
 
         Ext.each(this.appWindowDataList, function() {
             if (this.dsmVersions.indexOf(dsmVersion) !== -1) appNames.push(this.appName);
@@ -125,7 +131,7 @@ Ext.define("BIT.SDS._WindowUtil", {
 
     getRestoreSizePosPropertyName: function(appName) {
         var restoreSizePosPropertyName = "restoreSizePos";
-        var dsmVersion = this.getDsmVersion();
+        var dsmVersion = BIT.SDS.Util.getDsmVersion();
 
         if (appName === "SYNO.SDS.HA.Instance") {
             if (["5.2", "6.0", "6.1"].indexOf(dsmVersion) !== -1) {
@@ -351,7 +357,7 @@ Ext.define("BIT.SDS._WindowUtil", {
         var offsetX;
         var offsetY;
 
-        var dsmVersion = this.getDsmVersion();
+        var dsmVersion = BIT.SDS.Util.getDsmVersion();
 
         if (!Ext.isObject(region)) {
             region = this.suggestRegion();
