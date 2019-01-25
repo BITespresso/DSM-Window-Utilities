@@ -4,9 +4,9 @@ BIT.SDS.init = function() {
     BIT.SDS.WindowUtil = new BIT.SDS._WindowUtil();
 };
 
-Ext.namespace("BIT.SDS.AppWindowSize");
+Ext.namespace("BIT.SDS.AppWinSize");
 
-Ext.define("BIT.SDS.AppWindowSize", {
+Ext.define("BIT.SDS.AppWinSize", {
     appName: undefined,
     width: undefined,
     height: undefined,
@@ -196,13 +196,13 @@ Ext.define("BIT.SDS._WindowUtil", {
                 var windowSize;
 
                 if (Ext.isObject(appInstance)) {
-                    windowSize = new BIT.SDS.AppWindowSize(appName, appInstance.window.getWidth(), appInstance.window.getHeight());
+                    windowSize = new BIT.SDS.AppWinSize(appName, appInstance.window.getWidth(), appInstance.window.getHeight());
                     resolve(windowSize);
                 } else {
                     appInstances = SYNO.SDS.AppMgr.getByAppName(appName);
 
                     if (appInstances.length > 0) {
-                        windowSize = new BIT.SDS.AppWindowSize(appName, appInstances[0].window.getWidth(), appInstances[0].window.getHeight());
+                        windowSize = new BIT.SDS.AppWinSize(appName, appInstances[0].window.getWidth(), appInstances[0].window.getHeight());
                         resolve(windowSize);
                     } else {
                         reject(Error("Failed to launch " + appName));
@@ -227,7 +227,7 @@ Ext.define("BIT.SDS._WindowUtil", {
 
             if (restoreSizePos) {
                 if (Ext.isDefined(restoreSizePos.width) && Ext.isDefined(restoreSizePos.height)) {
-                    windowSize = new BIT.SDS.AppWindowSize(appName, restoreSizePos.width, restoreSizePos.height);
+                    windowSize = new BIT.SDS.AppWinSize(appName, restoreSizePos.width, restoreSizePos.height);
                     promises.push(BIT.SDS.Promise.resolve(windowSize));
                     return;
                 }
@@ -236,7 +236,7 @@ Ext.define("BIT.SDS._WindowUtil", {
             appInstances = SYNO.SDS.AppMgr.getByAppName(appName);
 
             if (appInstances.length > 0) {
-                windowSize = new BIT.SDS.AppWindowSize(appName, appInstances[0].window.getWidth(), appInstances[0].window.getHeight());
+                windowSize = new BIT.SDS.AppWinSize(appName, appInstances[0].window.getWidth(), appInstances[0].window.getHeight());
                 promises.push(BIT.SDS.Promise.resolve(windowSize));
                 return;
             }
