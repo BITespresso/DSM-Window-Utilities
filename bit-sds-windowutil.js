@@ -264,8 +264,12 @@ Ext.define("BIT.SDS._WindowUtil", {
         return this.getWindowSizesPromise(this.getAllAppNames());
     },
 
+    getAllWindowSizesPromiseWithRetry: function() {
+        return BIT.SDS.Promise.retry(BIT.SDS.WindowUtil.getAllWindowSizesPromise.createDelegate(this), 5, 5000);
+    },
+
     printAllWindowSizes: function() {
-        BIT.SDS.Promise.retry(BIT.SDS.WindowUtil.getAllWindowSizesPromise.createDelegate(this), 5, 5000)
+        BIT.SDS.WindowUtil.getAllWindowSizesPromiseWithRetry()
             .then(function(results) {
                 Ext.each(results, function(result) {
                     console.log(this.appName + "," + this.width + "," + this.height);
