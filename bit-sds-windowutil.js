@@ -62,6 +62,56 @@ Ext.define("BIT.SDS.AppWinSize",
     }
 });
 
+Ext.namespace("BIT.SDS.Region");
+
+Ext.define("BIT.SDS.Region",
+/**
+ * @lends      BIT.SDS.Region.prototype
+ */
+{
+    /**
+     * The x-coordinate of the upper left egde.
+     * @type       {number}
+     */
+    x: undefined,
+
+    /**
+     * The y-coordinate of the upper left egde.
+     * @type       {number}
+     */
+    y: undefined,
+
+    /**
+     * The width of the region.
+     * @type       {number}
+     */
+    width: undefined,
+
+    /**
+     * The height of the region.
+     * @type       {number}
+     */
+    height: undefined,
+
+    /**
+     * Creates a new {@link BIT.SDS.Region} instance.
+     *
+     * @method     BIT.SDS.Region
+     * @constructs
+     *
+     * @param      {number}  x       X-coordinate of the upper left egde.
+     * @param      {number}  y       Y-coordinate of the upper left egde.
+     * @param      {number}  width   The region width.
+     * @param      {number}  height  The region height.
+     */
+    constructor: function(x, y, width, height) {
+        this.x      = x;
+        this.y      = y;
+        this.width  = width;
+        this.height = height;
+    }
+});
+
 Ext.namespace("BIT.SDS.Util");
 
 /**
@@ -566,7 +616,7 @@ Ext.define("BIT.SDS._WindowUtil",
      * The suggestion is based on the current size of the browser window, therefore you should
      * adjust the browser window to your needs before calling this method.
      *
-     * @return     {Region}  The suggested region.
+     * @return     {BIT.SDS.Region}  The suggested region.
      *
      * @example
      * BIT.SDS.WindowUtil.suggestRegion();
@@ -618,12 +668,7 @@ Ext.define("BIT.SDS._WindowUtil",
         width  -= width  % 5;
         height -= height % 5;
 
-        region = {
-            x:      x,
-            y:      y,
-            width:  width,
-            height: height
-        };
+        region = new BIT.SDS.Region(x, y, width, height);
 
         regionLiteral = "{";
         for (var property in region) {
@@ -654,7 +699,7 @@ Ext.define("BIT.SDS._WindowUtil",
      * window has its designated position, the window will be opened each time this method is called
      * and set to the designated position.
      *
-     * @param      {Region=}  region  The region.
+     * @param      {BIT.SDS.Region=}  region  The region.
      *
      * @example
      * BIT.SDS.WindowUtil.cascadeOverlapAllWindows({x: 160, y: 139, width: 1640, height: 830});
