@@ -609,6 +609,65 @@ Ext.define("BIT.SDS._WindowUtil",
     },
 
     /**
+     * Translates the page x- and y-coordinates to left- and top-coordinates of the window relative
+     * to its parent.
+     *
+     * @param      {Ext.Window}  appWindow  The application window.
+     * @param      {number}      x          X-coordinate of the upper left egde.
+     * @param      {number}      y          Y-coordinate of the upper left egde.
+     * @return     {Object}      An object with `left` and `top` properties.
+     */
+    translatePagePositionToElementPoints: function(appWindow, x, y) {
+        if(x === undefined || y === undefined) return;
+
+        return elementPoints = appWindow.getPositionEl().translatePoints(x, y);
+    },
+
+    /**
+     * Sets the size and position of an application window.
+     *
+     * @param      {Ext.Window}  appWindow  The application window.
+     * @param      {number}      x          X-coordinate of the upper left egde.
+     * @param      {number}      y          Y-coordinate of the upper left egde.
+     * @param      {number}      width      The window width.
+     * @param      {number}      height     The window height.
+     */
+    setWindowSizeAndPosition: function(appWindow, x, y, width, height) {
+        var elementPoints;
+
+        if (!(appWindow instanceof Ext.Window)) return;
+
+        if (appWindow.maximized || appWindow.hidden) {
+            elementPoints = this.translatePagePositionToElementPoints(appWindow, x, y);
+
+            if (appWindow.draggable && appWindow.restorePos) {
+                appWindow.restorePos[0] = elementPoints.left;
+                appWindow.restorePos[1] = elementPoints.top;
+            } else {
+                appWindow.x = elementPoints.left;
+                appWindow.y = elementPoints.top;
+            }
+
+            if (appWindow.resizable) {
+                if (appWindow.restoreSize) {
+                    appWindow.restoreSize.width  = width;
+                    appWindow.restoreSize.height = height;
+                } else {
+                    appWindow.width  = width;
+                    appWindow.height = height;
+                }
+            }
+        }
+
+        if (!appWindow.maximized) {
+            appWindow.setPagePosition(x, y);
+            appWindow.setSize(width, height);
+        }
+
+        appWindow.saveRestoreData();
+    },
+
+    /**
      * Calculates a suggestion for the region which can be used as input for
      * {@link cascadeOverlapAllWindows}. The suggested region is printed to the console and returned
      * by this method.
