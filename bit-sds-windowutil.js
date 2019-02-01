@@ -610,32 +610,126 @@ Ext.define("BIT.SDS._WindowUtil",
 
     /**
      * Translates the page x- and y-coordinates to left- and top-coordinates of the window relative
-     * to its parent.
+     * to its parent. If a provided coordinate is undefined, the corresponding property in the
+     * returned object will also be undefined.
      *
-     * @param      {Ext.Window}  appWindow  The application window.
-     * @param      {number}      x          X-coordinate of the upper left egde.
-     * @param      {number}      y          Y-coordinate of the upper left egde.
-     * @return     {Object}      An object with `left` and `top` properties.
+     * @param      {Ext.Window}        appWindow  The application window.
+     * @param      {number|undefined}  x          X-coordinate of the upper left egde.
+     * @param      {number|undefined}  y          Y-coordinate of the upper left egde.
+     * @return     {Object}            An object with `left` and `top` properties.
+     *
+     * @example
+     * var appInstances = SYNO.SDS.AppMgr.getByAppName("SYNO.SDS.App.FileStation3.Instance");
+     * if (appInstances.length > 0) {
+     *   var appWindow = appInstances[0].window;
+     *   BIT.SDS.WindowUtil.translatePagePositionToElementPoints(appWindow, 0, 0);
+     * }
+     * // => {left: 0, top: -39}
      */
     translatePagePositionToElementPoints: function(appWindow, x, y) {
-        if(x === undefined || y === undefined) return;
-
-        return elementPoints = appWindow.getPositionEl().translatePoints(x, y);
+        var offset = appWindow.getPositionEl().translatePoints(0, 0);
+        return {
+            left: x + offset.left,
+            top:  y + offset.top
+        };
     },
 
     /**
-     * Sets the size and position of an application window.
+     * Translates the left- and top-coordinates of the window relative to its parent to page x- and
+     * y-coordinates. If a provided coordinate is undefined, the corresponding property in the
+     * returned object will also be undefined.
+     *
+     * @param      {Ext.Window}        appWindow  The application window.
+     * @param      {number|undefined}  left       Left-coordinate of the upper left egde.
+     * @param      {number|undefined}  top        Top-coordinate of the upper left egde.
+     * @return     {Object}            An object with `x` and `y` properties.
+     *
+     * @example
+     * var appInstances = SYNO.SDS.AppMgr.getByAppName("SYNO.SDS.App.FileStation3.Instance");
+     * if (appInstances.length > 0) {
+     *   var appWindow = appInstances[0].window;
+     *   BIT.SDS.WindowUtil.translateElementPointsToPagePosition(appWindow, 0, 0);
+     * }
+     * // => {x: 0, y: 39}
+     */
+    translateElementPointsToPagePosition: function(appWindow, left, top) {
+        var offset = appWindow.getPositionEl().translatePoints(0, 0);
+        return {
+            x: left - offset.left,
+            y: top  - offset.top
+        };
+    },
+
+    /**
+     * Gets the size and position of an application window.
      *
      * @param      {Ext.Window}  appWindow  The application window.
-     * @param      {number}      x          X-coordinate of the upper left egde.
-     * @param      {number}      y          Y-coordinate of the upper left egde.
-     * @param      {number}      width      The window width.
-     * @param      {number}      height     The window height.
+     * @return     {Object}      An object with `x`, `y`, `width` and `height` properties.
+     *
+     * @example
+     * var appInstances = SYNO.SDS.AppMgr.getByAppName("SYNO.SDS.App.FileStation3.Instance");
+     * if (appInstances.length > 0) {
+     *   var appWindow = appInstances[0].window;
+     *   BIT.SDS.WindowUtil.getWindowSizeAndPosition(appWindow);
+     * }
+     * // => {x: 310, y: 349, width: 920, height: 560}
+     */
+    getWindowSizeAndPosition: function(appWindow) {
+        var windowSizeAndPosition;
+        var pagePosition;
+
+        if (!(appWindow instanceof Ext.Window)) return;
+
+        windowSizeAndPosition = appWindow.getSizeAndPosition();
+
+        if (!("pageX" in windowSizeAndPosition) || !("pageY" in windowSizeAndPosition)) {
+            pagePosition = this.translateElementPointsToPagePosition(appWindow, windowSizeAndPosition.x, windowSizeAndPosition.y);
+            windowSizeAndPosition.pageX = pagePosition.x;
+            windowSizeAndPosition.pageY = pagePosition.y;
+        }
+
+        return {
+            x:      windowSizeAndPosition.pageX,
+            y:      windowSizeAndPosition.pageY,
+            width:  windowSizeAndPosition.width,
+            height: windowSizeAndPosition.height
+        };
+    },
+
+    /**
+     * Sets the size and position of an application window. If a provided parameter is undefined,
+     * the respective window property will not be changed.
+     *
+     * If the application window is in `maximized` and/or `hidden` state, this method will not
+     * change the state. However, after restoring the 'normal' state, the window will have the
+     * specified coordinates and dimensions.
+     *
+     * @param      {Ext.Window}        appWindow  The application window.
+     * @param      {number|undefined}  x          X-coordinate of the upper left egde.
+     * @param      {number|undefined}  y          Y-coordinate of the upper left egde.
+     * @param      {number|undefined}  width      The window width.
+     * @param      {number|undefined}  height     The window height.
+     *
+     * @example
+     * var appInstances = SYNO.SDS.AppMgr.getByAppName("SYNO.SDS.App.FileStation3.Instance");
+     * if (appInstances.length > 0) {
+     *   var appWindow = appInstances[0].window;
+     *   BIT.SDS.WindowUtil.setWindowSizeAndPosition(appWindow, 10, undefined, undefined, undefined);
+     * }
+     * // Sets x-coordinate of File Station window to 10px
      */
     setWindowSizeAndPosition: function(appWindow, x, y, width, height) {
         var elementPoints;
+        var currentSizeAndPosition;
 
         if (!(appWindow instanceof Ext.Window)) return;
+
+        currentSizeAndPosition = this.getWindowSizeAndPosition(appWindow);
+
+        x      = (x      === undefined) ? currentSizeAndPosition.x      : x;
+        y      = (y      === undefined) ? currentSizeAndPosition.y      : y;
+        width  = (width  === undefined) ? currentSizeAndPosition.width  : width;
+        height = (height === undefined) ? currentSizeAndPosition.height : height;
 
         if (appWindow.maximized || appWindow.hidden) {
             elementPoints = this.translatePagePositionToElementPoints(appWindow, x, y);
