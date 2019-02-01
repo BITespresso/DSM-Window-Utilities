@@ -62,11 +62,11 @@ Ext.define("BIT.SDS.AppWinSize",
     }
 });
 
-Ext.namespace("BIT.SDS.Region");
+Ext.namespace("BIT.SDS.Rectangle");
 
-Ext.define("BIT.SDS.Region",
+Ext.define("BIT.SDS.Rectangle",
 /**
- * @lends      BIT.SDS.Region.prototype
+ * @lends      BIT.SDS.Rectangle.prototype
  */
 {
     /**
@@ -82,27 +82,27 @@ Ext.define("BIT.SDS.Region",
     y: undefined,
 
     /**
-     * The width of the region.
+     * The width of the rectangle.
      * @type       {number}
      */
     width: undefined,
 
     /**
-     * The height of the region.
+     * The height of the rectangle.
      * @type       {number}
      */
     height: undefined,
 
     /**
-     * Creates a new {@link BIT.SDS.Region} instance.
+     * Creates a new {@link BIT.SDS.Rectangle} instance.
      *
-     * @method     BIT.SDS.Region
+     * @method     BIT.SDS.Rectangle
      * @constructs
      *
      * @param      {number}  x       X-coordinate of the upper left egde.
      * @param      {number}  y       Y-coordinate of the upper left egde.
-     * @param      {number}  width   The region width.
-     * @param      {number}  height  The region height.
+     * @param      {number}  width   The rectangle width.
+     * @param      {number}  height  The rectangle height.
      */
     constructor: function(x, y, width, height) {
         this.x      = x;
@@ -762,26 +762,26 @@ Ext.define("BIT.SDS._WindowUtil",
     },
 
     /**
-     * Calculates a suggestion for the region which can be used as input for
-     * {@link cascadeOverlapAllWindows}. The suggested region is printed to the console and returned
-     * by this method.
+     * Calculates a suggestion for the rectangle which can be used as input for
+     * {@link cascadeOverlapAllWindows}. The suggested rectangle is printed to the console and
+     * returned by this method.
      *
      * The suggestion is based on the current size of the browser window, therefore you should
      * adjust the browser window to your needs before calling this method.
      *
-     * @return     {BIT.SDS.Region}  The suggested region.
+     * @return     {BIT.SDS.Rectangle}  The suggested rectangle.
      *
      * @example
-     * BIT.SDS.WindowUtil.suggestRegion();
+     * BIT.SDS.WindowUtil.suggestRectangle();
      * // => {x: 160, y: 139, width: 1640, height: 830}
      */
-    suggestRegion: function() {
+    suggestRectangle: function() {
         var x;
         var y;
         var width;
         var height;
-        var region;
-        var regionLiteral;
+        var rectangle;
+        var rectangleLiteral;
 
         var taskbarHeight = Ext.get("sds-taskbar").getHeight();
         var desktopShortcutsWidth = Ext.select("li.launch-icon").first().getWidth() + (2 * Ext.select("ul.sds-desktop-shortcut").first().getMargins("l"));
@@ -821,26 +821,26 @@ Ext.define("BIT.SDS._WindowUtil",
         width  -= width  % 5;
         height -= height % 5;
 
-        region = new BIT.SDS.Region(x, y, width, height);
+        rectangle = new BIT.SDS.Rectangle(x, y, width, height);
 
-        regionLiteral = "{";
-        for (var property in region) {
-            if (region.hasOwnProperty(property)) {
-                regionLiteral += property + ": " + region[property] + ", ";
+        rectangleLiteral = "{";
+        for (var property in rectangle) {
+            if (rectangle.hasOwnProperty(property)) {
+                rectangleLiteral += property + ": " + rectangle[property] + ", ";
             }
         }
-        regionLiteral = regionLiteral.slice(0, -2) + "}";
+        rectangleLiteral = rectangleLiteral.slice(0, -2) + "}";
 
-        console.log("Using suggested region: region = " + regionLiteral);
+        console.log("Using suggested rectangle: rectangle = " + rectangleLiteral);
 
-        return region;
+        return rectangle;
     },
 
     /**
      * Resets all application windows to their default sizes and to positions determined by the
-     * specified region. The algorithm used ensures that each window has a position that depends
-     * entirely on the specified region, regardless of which applications are installed or which DSM
-     * version is used.
+     * specified rectangle. The algorithm used ensures that each window has a position that depends
+     * entirely on the specified rectangle, regardless of which applications are installed or which
+     * DSM version is used.
      *
      * Note 1: Open application windows will not change their size and position. You must manually
      * close and reopen the windows to see the effects of the reset. Do not move or resize an
@@ -852,7 +852,7 @@ Ext.define("BIT.SDS._WindowUtil",
      * window has its designated position, the window will be opened each time this method is called
      * and set to the designated position.
      *
-     * @param      {BIT.SDS.Region=}  region  The region.
+     * @param      {BIT.SDS.Rectangle=}  rectangle  The rectangle.
      *
      * @example
      * BIT.SDS.WindowUtil.cascadeOverlapAllWindows({x: 160, y: 139, width: 1640, height: 830});
@@ -860,23 +860,23 @@ Ext.define("BIT.SDS._WindowUtil",
      * @example
      * BIT.SDS.WindowUtil.cascadeOverlapAllWindows();
      */
-    cascadeOverlapAllWindows: function(region) {
-        var regionBottomRightCorner;
+    cascadeOverlapAllWindows: function(rectangle) {
+        var rectangleBottomRightCorner;
         var offsetX;
         var offsetY;
 
         var dsmVersion = BIT.SDS.Util.getDsmVersion();
 
-        if (!Ext.isObject(region)) {
-            region = this.suggestRegion();
+        if (!Ext.isObject(rectangle)) {
+            rectangle = this.suggestRectangle();
         }
 
-        offsetX = region.x;
-        offsetY = region.y;
+        offsetX = rectangle.x;
+        offsetY = rectangle.y;
 
-        regionBottomRightCorner = {
-            x: region.x + region.width,
-            y: region.y + region.height
+        rectangleBottomRightCorner = {
+            x: rectangle.x + rectangle.width,
+            y: rectangle.y + rectangle.height
         };
 
         Ext.each(this.appWindowDataList, function(appWindowData) {
@@ -891,19 +891,19 @@ Ext.define("BIT.SDS._WindowUtil",
                 y: offsetY + appWindowData.maxInitialWindowHeight
             };
 
-            if (windowBottomRightCorner.x > regionBottomRightCorner.x && windowBottomRightCorner.y > regionBottomRightCorner.y) {
-                offsetX = region.x;
-                offsetY = region.y;
+            if (windowBottomRightCorner.x > rectangleBottomRightCorner.x && windowBottomRightCorner.y > rectangleBottomRightCorner.y) {
+                offsetX = rectangle.x;
+                offsetY = rectangle.y;
             } else {
-                if (windowBottomRightCorner.x > regionBottomRightCorner.x) {
-                    if (offsetX === region.x) {
-                        offsetY = region.y;
+                if (windowBottomRightCorner.x > rectangleBottomRightCorner.x) {
+                    if (offsetX === rectangle.x) {
+                        offsetY = rectangle.y;
                     }
-                    offsetX = region.x;
+                    offsetX = rectangle.x;
                 } else {
-                    if (windowBottomRightCorner.y > regionBottomRightCorner.y) {
+                    if (windowBottomRightCorner.y > rectangleBottomRightCorner.y) {
                         // offsetX += 30;
-                        offsetY = region.y;
+                        offsetY = rectangle.y;
                     }
                 }
             }
