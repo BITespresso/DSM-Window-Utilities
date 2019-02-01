@@ -883,6 +883,8 @@ Ext.define("BIT.SDS._WindowUtil",
             var restoreSizePosPropertyName = this.getRestoreSizePosPropertyName(appWindowData.appName);
             var restoreSizePos;
             var windowBottomRightCorner;
+            var appInstances;
+            var installedAppNames;
 
             windowBottomRightCorner = {
                 x: offsetX + appWindowData.maxInitialWindowWidth,
@@ -916,11 +918,23 @@ Ext.define("BIT.SDS._WindowUtil",
                 SYNO.SDS.UserSettings.setProperty(appWindowData.appName, restoreSizePosPropertyName, restoreSizePos);
 
                 if (appWindowData.appName === "SYNO.SDS.CMS.Application") {
-                    SYNO.SDS.AppLaunch(appWindowData.appName, {}, false, function(appInstance) {
-                        if (Ext.isObject(appInstance)) {
-                            appInstance.window.setPagePosition(restoreSizePos.pageX, restoreSizePos.pageY);
+                    appInstances = SYNO.SDS.AppMgr.getByAppName(appWindowData.appName);
+
+                    if (appInstances.length > 0) {
+                        Ext.each(appInstances, function(appInstance) {
+                            this.setWindowSizeAndPosition(appInstance.window, restoreSizePos.pageX, restoreSizePos.pageY, undefined, undefined);
+                        }, this);
+                    } else {
+                        installedAppNames = SYNO.SDS.AppUtil.getApps();
+
+                        if (installedAppNames.indexOf(appWindowData.appName) !== -1) {
+                            SYNO.SDS.AppLaunch(appWindowData.appName, {}, false, function(appInstance) {
+                                if (Ext.isObject(appInstance)) {
+                                    appInstance.window.setPagePosition(restoreSizePos.pageX, restoreSizePos.pageY);
+                                }
+                            }, this);
                         }
-                    }, this);
+                    }
                 }
             }
 
