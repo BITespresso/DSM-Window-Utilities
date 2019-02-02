@@ -837,10 +837,18 @@ Ext.define("BIT.SDS._WindowUtil",
     },
 
     /**
-     * Resets all application windows to their default sizes and to positions determined by the
-     * specified rectangle. The algorithm used ensures that each window has a position that depends
-     * entirely on the specified rectangle, regardless of which applications are installed or which
-     * DSM version is used.
+     * Resets all application windows to their default or predefined sizes and to positions
+     * determined by the specified rectangle. The algorithm used ensures that each window has a
+     * position that depends entirely on the specified rectangle, regardless of which applications
+     * are installed or which DSM version is used.
+     *
+     * If the option to use defined sizes is set to `true`, the windows will be set to the sizes
+     * defined internally in this script. This results in a particular application window having the
+     * same size for all DSM versions regardless of its default size. The internally defined window
+     * sizes are the maximum of the standard window sizes for all application and DSM versions.
+     * However, since the standard size of an application window can increase with increasing
+     * application or DSM version number, the sizes in this script might be changed in future
+     * versions.
      *
      * Note 1: Open application windows will not change their size and position. You must manually
      * close and reopen the windows to see the effects of the reset. Do not move or resize an
@@ -852,15 +860,19 @@ Ext.define("BIT.SDS._WindowUtil",
      * window has its designated position, the window will be opened each time this method is called
      * and set to the designated position.
      *
-     * @param      {BIT.SDS.Rectangle=}  rectangle  The rectangle.
+     * @param      {BIT.SDS.Rectangle=}  rectangle        The rectangle.
+     * @param      {boolean=}            useDefinedSizes  Use defined sizes (Default: `false`).
+     *
+     * @example
+     * BIT.SDS.WindowUtil.cascadeOverlapAllWindows();
      *
      * @example
      * BIT.SDS.WindowUtil.cascadeOverlapAllWindows({x: 160, y: 139, width: 1640, height: 830});
      *
      * @example
-     * BIT.SDS.WindowUtil.cascadeOverlapAllWindows();
+     * BIT.SDS.WindowUtil.cascadeOverlapAllWindows({x: 160, y: 139, width: 1640, height: 830}, true);
      */
-    cascadeOverlapAllWindows: function(rectangle) {
+    cascadeOverlapAllWindows: function(rectangle, useDefinedSizes) {
         var rectangleBottomRightCorner;
         var offsetX;
         var offsetY;
@@ -915,6 +927,11 @@ Ext.define("BIT.SDS._WindowUtil",
                     pageY: offsetY
                 };
 
+                if (useDefinedSizes) {
+                    restoreSizePos.width  = appWindowData.maxInitialWindowWidth;
+                    restoreSizePos.height = appWindowData.maxInitialWindowHeight;
+                }
+
                 SYNO.SDS.UserSettings.setProperty(appWindowData.appName, restoreSizePosPropertyName, restoreSizePos);
 
                 if (appWindowData.appName === "SYNO.SDS.CMS.Application") {
@@ -922,7 +939,7 @@ Ext.define("BIT.SDS._WindowUtil",
 
                     if (appInstances.length > 0) {
                         Ext.each(appInstances, function(appInstance) {
-                            this.setWindowSizeAndPosition(appInstance.window, restoreSizePos.pageX, restoreSizePos.pageY, undefined, undefined);
+                            this.setWindowSizeAndPosition(appInstance.window, restoreSizePos.pageX, restoreSizePos.pageY, restoreSizePos.width, restoreSizePos.height);
                         }, this);
                     } else {
                         installedAppNames = SYNO.SDS.AppUtil.getApps();
