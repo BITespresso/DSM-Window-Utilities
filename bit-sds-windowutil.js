@@ -697,68 +697,75 @@ Ext.define("BIT.SDS._WindowUtil",
     },
 
     /**
-     * Sets the size and position of an application window. If a provided parameter is undefined,
-     * the respective window property will not be changed.
+     * Sets the size and position of all open windows of the provided application. If a provided
+     * coordinate or dimension is `undefined`, the respective window property will not be changed.
      *
-     * If the application window is in `maximized` and/or `hidden` state, this method will not
-     * change the state. However, after restoring the 'normal' state, the window will have the
-     * specified coordinates and dimensions.
+     * If an application window is in `maximized` and/or `hidden` state, this method will not change
+     * the state. However, after restoring the 'normal' state, the window will have the specified
+     * coordinates and dimensions.
      *
-     * @param      {Ext.Window}        appWindow  The application window.
-     * @param      {number|undefined}  x          X-coordinate of the upper left egde.
-     * @param      {number|undefined}  y          Y-coordinate of the upper left egde.
-     * @param      {number|undefined}  width      The window width.
-     * @param      {number|undefined}  height     The window height.
+     * @param      {string}            appName  The application name.
+     * @param      {number|undefined}  x        X-coordinate of the upper left egde.
+     * @param      {number|undefined}  y        Y-coordinate of the upper left egde.
+     * @param      {number|undefined}  width    The window width.
+     * @param      {number|undefined}  height   The window height.
      *
      * @example
-     * var appInstances = SYNO.SDS.AppMgr.getByAppName("SYNO.SDS.App.FileStation3.Instance");
-     * if (appInstances.length > 0) {
-     *   var appWindow = appInstances[0].window;
-     *   BIT.SDS.WindowUtil.setWindowSizeAndPosition(appWindow, 10, undefined, undefined, undefined);
-     * }
-     * // Sets x-coordinate of File Station window to 10px
+     * BIT.SDS.WindowUtil.setWindowSizeAndPosition("SYNO.SDS.App.FileStation3.Instance", 10, undefined, undefined, undefined);
+     * // Sets the x-coordinate of all open File Station windows to 10px
      */
-    setWindowSizeAndPosition: function(appWindow, x, y, width, height) {
+    setWindowSizeAndPosition: function(appName, x, y, width, height) {
+        var appInstances;
+        var appWindow;
         var elementPoints;
         var currentSizeAndPosition;
+        var newX;
+        var newY;
+        var newWidth;
+        var newWidth;
 
-        if (!(appWindow instanceof Ext.Window)) return;
+        appInstances = SYNO.SDS.AppMgr.getByAppName(appName);
 
-        currentSizeAndPosition = this.getWindowSizeAndPosition(appWindow);
+        if (appInstances.length > 0) {
+            Ext.each(appInstances, function(appInstance) {
+                appWindow = appInstance.window;
+                currentSizeAndPosition = this.getWindowSizeAndPosition(appWindow);
 
-        x      = (x      === undefined) ? currentSizeAndPosition.x      : x;
-        y      = (y      === undefined) ? currentSizeAndPosition.y      : y;
-        width  = (width  === undefined) ? currentSizeAndPosition.width  : width;
-        height = (height === undefined) ? currentSizeAndPosition.height : height;
+                newX      = (x      === undefined) ? currentSizeAndPosition.x      : x;
+                newY      = (y      === undefined) ? currentSizeAndPosition.y      : y;
+                newWidth  = (width  === undefined) ? currentSizeAndPosition.width  : width;
+                newHeight = (height === undefined) ? currentSizeAndPosition.height : height;
 
-        if (appWindow.maximized || appWindow.hidden) {
-            elementPoints = this.translatePagePositionToElementPoints(appWindow, x, y);
+                if (appWindow.maximized || appWindow.hidden) {
+                    elementPoints = this.translatePagePositionToElementPoints(appWindow, newX, newY);
 
-            if (appWindow.draggable && appWindow.restorePos) {
-                appWindow.restorePos[0] = elementPoints.left;
-                appWindow.restorePos[1] = elementPoints.top;
-            } else {
-                appWindow.x = elementPoints.left;
-                appWindow.y = elementPoints.top;
-            }
+                    if (appWindow.draggable && appWindow.restorePos) {
+                        appWindow.restorePos[0] = elementPoints.left;
+                        appWindow.restorePos[1] = elementPoints.top;
+                    } else {
+                        appWindow.x = elementPoints.left;
+                        appWindow.y = elementPoints.top;
+                    }
 
-            if (appWindow.resizable) {
-                if (appWindow.restoreSize) {
-                    appWindow.restoreSize.width  = width;
-                    appWindow.restoreSize.height = height;
-                } else {
-                    appWindow.width  = width;
-                    appWindow.height = height;
+                    if (appWindow.resizable) {
+                        if (appWindow.restoreSize) {
+                            appWindow.restoreSize.width  = newWidth;
+                            appWindow.restoreSize.height = newHeight;
+                        } else {
+                            appWindow.width  = newWidth;
+                            appWindow.height = newHeight;
+                        }
+                    }
                 }
-            }
-        }
 
-        if (!appWindow.maximized) {
-            appWindow.setPagePosition(x, y);
-            appWindow.setSize(width, height);
-        }
+                if (!appWindow.maximized) {
+                    appWindow.setPagePosition(newX, newY);
+                    appWindow.setSize(newWidth, newHeight);
+                }
 
-        appWindow.saveRestoreData();
+                appWindow.saveRestoreData();
+            }, this);
+        }
     },
 
     /**
@@ -837,12 +844,12 @@ Ext.define("BIT.SDS._WindowUtil",
     },
 
     /**
-     * Resets all application windows to their default or predefined sizes and to positions
-     * determined by the specified rectangle. The algorithm used ensures that each window has a
-     * position that depends entirely on the specified rectangle, regardless of which applications
-     * are installed or which DSM version is used.
+     * Sets all application windows to positions determined by the specified rectangle and to their
+     * default or predefined sizes. The algorithm used ensures that each window has a position that
+     * depends entirely on the specified rectangle, regardless of which applications are installed
+     * or which DSM version is used.
      *
-     * If the option to use defined sizes is set to `true`, the windows will be set to the sizes
+     * If the option `useDefinedSizes` is set to `true`, the windows will be set to the sizes
      * defined internally in this script. This results in a particular application window having the
      * same size for all DSM versions regardless of its default size. The internally defined window
      * sizes are the maximum of the standard window sizes for all application and DSM versions.
@@ -850,15 +857,16 @@ Ext.define("BIT.SDS._WindowUtil",
      * application or DSM version number, the sizes in this script might be changed in future
      * versions.
      *
-     * Note 1: Open application windows will not change their size and position. You must manually
-     * close and reopen the windows to see the effects of the reset. Do not move or resize an
-     * already open application window, as this immediately sets the restore size and position again
-     * to the current window size and position.
+     * **Note 1**: Open application windows are moved to the desired position, but unless the
+     * `useDefinedSizes` option is 'true', their size will not be changed immediately. In this case,
+     * you must manually close and reopen the windows to see the effects of resetting the window
+     * size. Before doing so, do not move or resize an open application window, as this will
+     * immediately set the restore size back to the current window size.
      *
-     * Note 2: The Synology CMS (Central Management System) application (`SYNO.SDS.CMS.Application`)
-     * does not read the stored window size and position due to a bug in DSM. To ensure that this
-     * window has its designated position, the window will be opened each time this method is called
-     * and set to the designated position.
+     * **Note 2**: The Synology CMS (Central Management System) application
+     * (`SYNO.SDS.CMS.Application`) does not read the stored window size and position due to a bug
+     * in DSM. To ensure that this window has the correct size and position, each time this method
+     * is called, the window will be opened and set to the correct size and position.
      *
      * @param      {BIT.SDS.Rectangle=}  rectangle        The rectangle.
      * @param      {boolean=}            useDefinedSizes  Use defined sizes (Default: `false`).
@@ -933,24 +941,18 @@ Ext.define("BIT.SDS._WindowUtil",
                 }
 
                 SYNO.SDS.UserSettings.setProperty(appWindowData.appName, restoreSizePosPropertyName, restoreSizePos);
+                this.setWindowSizeAndPosition(appWindowData.appName, restoreSizePos.pageX, restoreSizePos.pageY, restoreSizePos.width, restoreSizePos.height);
 
                 if (appWindowData.appName === "SYNO.SDS.CMS.Application") {
                     appInstances = SYNO.SDS.AppMgr.getByAppName(appWindowData.appName);
+                    installedAppNames = SYNO.SDS.AppUtil.getApps();
 
-                    if (appInstances.length > 0) {
-                        Ext.each(appInstances, function(appInstance) {
-                            this.setWindowSizeAndPosition(appInstance.window, restoreSizePos.pageX, restoreSizePos.pageY, restoreSizePos.width, restoreSizePos.height);
+                    if ((appInstances.length === 0) && (installedAppNames.indexOf(appWindowData.appName) !== -1)) {
+                        SYNO.SDS.AppLaunch(appWindowData.appName, {}, false, function(appInstance) {
+                            if (Ext.isObject(appInstance)) {
+                                appInstance.window.setPagePosition(restoreSizePos.pageX, restoreSizePos.pageY);
+                            }
                         }, this);
-                    } else {
-                        installedAppNames = SYNO.SDS.AppUtil.getApps();
-
-                        if (installedAppNames.indexOf(appWindowData.appName) !== -1) {
-                            SYNO.SDS.AppLaunch(appWindowData.appName, {}, false, function(appInstance) {
-                                if (Ext.isObject(appInstance)) {
-                                    appInstance.window.setPagePosition(restoreSizePos.pageX, restoreSizePos.pageY);
-                                }
-                            }, this);
-                        }
                     }
                 }
             }
