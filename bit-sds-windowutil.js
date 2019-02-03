@@ -296,9 +296,9 @@ Ext.define("BIT.SDS._WindowUtil",
     },
 
     /**
-     * Removes the window restore sizes and positions of the provided or all application(s). This
-     * will reset the size and position of the application windows to the values and behavior after
-     * the initial DSM installation.
+     * Reset the window restore sizes and positions of the provided or all application(s). This sets
+     * the size and position of the application windows to the values and behavior after the initial
+     * DSM installation.
      *
      * The window sizes will therefore be the default sizes of the individual application windows
      * defined internally by the application.
@@ -316,15 +316,15 @@ Ext.define("BIT.SDS._WindowUtil",
      * @param      {string[]|string|undefined}  appNames  The application name(s).
      *
      * @example
-     * BIT.SDS.WindowUtil.removeRestoreSizesAndPositions();
+     * BIT.SDS.WindowUtil.resetRestoreSizesAndPositions();
      *
      * @example
-     * BIT.SDS.WindowUtil.removeRestoreSizesAndPositions("SYNO.SDS.PkgManApp.Instance");
+     * BIT.SDS.WindowUtil.resetRestoreSizesAndPositions("SYNO.SDS.PkgManApp.Instance");
      *
      * @example
-     * BIT.SDS.WindowUtil.removeRestoreSizesAndPositions(["SYNO.SDS.HA.Instance", ...]);
+     * BIT.SDS.WindowUtil.resetRestoreSizesAndPositions(["SYNO.SDS.HA.Instance", ...]);
      */
-    removeRestoreSizesAndPositions: function(appNames) {
+    resetRestoreSizesAndPositions: function(appNames) {
         if (!appNames) appNames = this.getAppNames();
 
         Ext.each(appNames, function(appName) {
@@ -338,9 +338,8 @@ Ext.define("BIT.SDS._WindowUtil",
     },
 
     /**
-     * Removes the window restore sizes of the provided or all application(s). This will reset the
-     * size of the application windows to the values and behavior after the initial DSM
-     * installation.
+     * Reset the window restore sizes of the provided or all application(s). This sets the size of
+     * the application windows to the values and behavior after the initial DSM installation.
      *
      * The window sizes will therefore be the default sizes of the individual application windows
      * defined internally by the application.
@@ -355,15 +354,15 @@ Ext.define("BIT.SDS._WindowUtil",
      * @param      {string[]|string|undefined}  appNames  The application name(s).
      *
      * @example
-     * BIT.SDS.WindowUtil.removeRestoreSizes();
+     * BIT.SDS.WindowUtil.resetRestoreSizes();
      *
      * @example
-     * BIT.SDS.WindowUtil.removeRestoreSizes("SYNO.SDS.PkgManApp.Instance");
+     * BIT.SDS.WindowUtil.resetRestoreSizes("SYNO.SDS.PkgManApp.Instance");
      *
      * @example
-     * BIT.SDS.WindowUtil.removeRestoreSizes(["SYNO.SDS.HA.Instance", ...]);
+     * BIT.SDS.WindowUtil.resetRestoreSizes(["SYNO.SDS.HA.Instance", ...]);
      */
-    removeRestoreSizes: function(appNames) {
+    resetRestoreSizes: function(appNames) {
         if (!appNames) appNames = this.getAppNames();
 
         Ext.each(appNames, function(appName) {
@@ -379,8 +378,8 @@ Ext.define("BIT.SDS._WindowUtil",
     },
 
     /**
-     * Removes the window restore positions of the provided or all application(s). This will reset
-     * the position of the application windows to the values and behavior after the initial DSM
+     * Reset the window restore positions of the provided or all application(s). This sets the
+     * position of the application windows to the values and behavior after the initial DSM
      * installation.
      *
      * The window positions will not be fixed, but determined by an algorithm that offsets the upper
@@ -396,15 +395,15 @@ Ext.define("BIT.SDS._WindowUtil",
      * @param      {string[]|string|undefined}  appNames  The application name(s).
      *
      * @example
-     * BIT.SDS.WindowUtil.removeRestorePositions();
+     * BIT.SDS.WindowUtil.resetRestorePositions();
      *
      * @example
-     * BIT.SDS.WindowUtil.removeRestorePositions("SYNO.SDS.PkgManApp.Instance");
+     * BIT.SDS.WindowUtil.resetRestorePositions("SYNO.SDS.PkgManApp.Instance");
      *
      * @example
-     * BIT.SDS.WindowUtil.removeRestorePositions(["SYNO.SDS.HA.Instance", ...]);
+     * BIT.SDS.WindowUtil.resetRestorePositions(["SYNO.SDS.HA.Instance", ...]);
      */
-    removeRestorePositions: function(appNames) {
+    resetRestorePositions: function(appNames) {
         if (!appNames) appNames = this.getAppNames();
 
         Ext.each(appNames, function(appName) {
