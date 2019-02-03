@@ -62,6 +62,356 @@ Ext.define("BIT.SDS.AppWinSize",
     }
 });
 
+Ext.namespace("BIT.SDS.Promise");
+
+Ext.define("BIT.SDS.Promise",
+/**
+ * @lends      BIT.SDS.Promise.prototype
+ */
+{
+    /**
+     * @lends      BIT.SDS.Promise
+     */
+    statics: {
+        state: {
+            pending:   "pending",
+            fulfilled: "fulfilled",
+            rejected:  "rejected"
+        },
+
+        /**
+         * Returns a promise that resolves when all of the promises passed have resolved or when the
+         * array contains no promises. It rejects with the reason of the first promise that rejects.
+         *
+         * @param      {BIT.SDS.Promise[]}  promises  The promises.
+         * @return     {BIT.SDS.Promise}    A new promise.
+         */
+        all: function(promises) {
+            return new BIT.SDS.Promise(function(resolve, reject) {
+                var results = [];
+                var resolved = 0;
+
+                Ext.each(promises, function(promise, i) {
+                    if (!promise || !Ext.isFunction(promise.then)) {
+                        promise = BIT.SDS.Promise.resolve(promise);
+                    }
+
+                    promise
+                        .then(function(value) {
+                            results[i] = value;
+                            resolved++;
+
+                            if (resolved === promises.length) resolve(results);
+                        })
+                        .catch(function(reason) {
+                            reject(reason);
+                        });
+                }, this);
+
+                if (promises.length === 0) resolve(results);
+            });
+        },
+
+        /**
+         * Returns a new promise that resolves or rejects as soon as one of the promises passed
+         * resolves or rejects, with the value or reason from that promise.
+         *
+         * @param      {BIT.SDS.Promise[]}  promises  The promises.
+         * @return     {BIT.SDS.Promise}    A new promise.
+         */
+        race: function(promises) {
+            return new BIT.SDS.Promise(function(resolve, reject) {
+                Ext.each(promises, function(promise) {
+                    promise.then(resolve, reject);
+                }, this);
+            });
+        },
+
+        /**
+         * Returns a promise that is rejected with the passed reason.
+         *
+         * @param      {*}                reason  The reason.
+         * @return     {BIT.SDS.Promise}  A new rejecting promise.
+         */
+        reject: function(reason) {
+            return new BIT.SDS.Promise(function(resolve, reject) {
+                reject(reason);
+            });
+        },
+
+        /**
+         * Returns a promise that is resolved with the passed value.
+         *
+         * @param      {*}                value   The value.
+         * @return     {BIT.SDS.Promise}  A new resolving promise.
+         */
+        resolve: function(value) {
+            return new BIT.SDS.Promise(function(resolve, reject) {
+                resolve(value);
+            });
+        },
+
+        /**
+         * Tries to resolve a promise multiple times if it is rejected. The passed function will be
+         * called repeatedly until the promise returned by the function is resolved or the maximum
+         * number of attempts is reached.
+         *
+         * Returns a new promise that is fulfilled with the fulfillment value of the promise
+         * returned by the function, or is rejected with the same reason as the promise returned by
+         * the function in the last attempt.
+         *
+         * Subsequent calls of the function will be deferred by a delay specified in milliseconds.
+         *
+         * @param      {Function}         fn      The function returning a promise.
+         * @param      {number}           times   The maximum number of attempts.
+         * @param      {number}           delay   The delay.
+         * @return     {BIT.SDS.Promise}  A new promise.
+         *
+         * @example
+         * var trySomething = function() {
+         *   var resolver = function(resolve, reject) {
+         *     ... // Try to resolve promise
+         *   };
+         *   return new BIT.SDS.Promise(resolver);
+         * };
+         * BIT.SDS.Promise.retry(trySomething, 5, 5000)
+         *   .then(...)
+         *   .catch(...);
+         */
+        retry: function(fn, times, delay) {
+            return new BIT.SDS.Promise(function(resolve, reject) {
+                var lastRejectReason;
+                var retry = function() {
+                    if (times > 0) {
+                        times--;
+                        fn()
+                            .then(resolve)
+                            .catch(function(reason) {
+                                lastRejectReason = reason;
+                                setTimeout(retry, delay);
+                            });
+                    } else {
+                        reject(lastRejectReason);
+                    }
+                };
+                retry();
+            });
+        }
+    },
+
+    clients: undefined,
+
+    result: undefined,
+
+    state: undefined,
+
+    /**
+     * Creates a new {@link BIT.SDS.Promise} instance.
+     *
+     * @method     BIT.SDS.Promise
+     * @constructs
+     *
+     * @param      {Function}  resolver  The resolver function.
+     */
+    constructor: function(resolver) {
+        this.state = BIT.SDS.Promise.state.pending;
+        this.clients = [];
+        this.result = undefined;
+
+        function resolve(value) {
+            this.resolve(value);
+        }
+
+        function reject(reason) {
+            this.reject(reason);
+        }
+
+        if (Ext.isFunction(resolver)) {
+            try {
+                resolver(resolve.createDelegate(this), reject.createDelegate(this));
+            } catch (error) {
+                this.reject(error);
+            }
+        } else if (arguments.length > 0) {
+            throw Error("Promise resolver " + resolver + " is not a function");
+        }
+    },
+
+    /**
+     * Adds a callback to the promise to be called when this promise is rejected. Returns a new
+     * promise that will be rejected when the callback is complete.
+     *
+     * @param      {Function}         onRejected  The rejected callback.
+     * @return     {BIT.SDS.Promise}  A new promise.
+     */
+    catch: function(onRejected) {
+        return this.then(null, onRejected);
+    },
+
+    /**
+     * Adds a callback to the promise to be called when this promise is fulfilled or rejected.
+     * Returns a new promise that will be fulfilled or rejected when the callback is complete.
+     *
+     * @param      {Function}         onFinally  The finally callback.
+     * @return     {BIT.SDS.Promise}  A new promise.
+     */
+    finally: function(onFinally) {
+        if (!Ext.isFunction(onFinally)) return this.then(onFinally, onFinally);
+
+        function onFulfilled(value) {
+            return new BIT.SDS.Promise(function(resolve) {
+                resolve(onFinally());
+            }).then(function() {
+                return value;
+            });
+        }
+
+        function onRejected(reason) {
+            return new BIT.SDS.Promise(function(resolve) {
+                resolve(onFinally());
+            }).then(function() {
+                throw reason;
+            });
+        }
+
+        return this.then(onFulfilled.createDelegate(this), onRejected.createDelegate(this));
+    },
+
+    /**
+     * Rejects the promise with the passed reason.
+     *
+     * @param      {*}   reason  The reason.
+     */
+    reject: function(reason) {
+        if (this.state !== BIT.SDS.Promise.state.pending) return;
+
+        this.state = BIT.SDS.Promise.state.rejected;
+        this.result = reason;
+
+        function rejectAllClients() {
+            Ext.each(this.clients, function(client) {
+                client.rejectClient(reason);
+            }, this);
+        }
+
+        setTimeout(rejectAllClients.createDelegate(this));
+    },
+
+    /**
+     * Resolves the promise with the passed value.
+     *
+     * @param      {*}       value   The value.
+     */
+    resolve: function(value) {
+        var alreadyCalled = false;
+        var then;
+
+        function onFulfilled(value) {
+            if (!alreadyCalled) {
+                alreadyCalled = true;
+                this.resolve(value);
+            }
+        }
+
+        function onRejected(reason) {
+            if (!alreadyCalled) {
+                alreadyCalled = true;
+                this.reject(reason);
+            }
+        }
+
+        if (this.state !== BIT.SDS.Promise.state.pending) return;
+
+        if (value === this) return this.reject(Error("A promise cannot be resolved by itself"));
+
+        if (value && (Ext.isFunction(value) || Ext.isObject(value))) {
+            try {
+                then = value.then;
+
+                if (Ext.isFunction(then)) {
+                    then.call(value, onFulfilled.createDelegate(this), onRejected.createDelegate(this));
+
+                    return;
+                }
+            } catch (error) {
+                if (!alreadyCalled) this.reject(error);
+
+                return;
+            }
+        }
+
+        this.state = BIT.SDS.Promise.state.fulfilled;
+        this.result = value;
+
+        function fulfillAllClients() {
+            Ext.each(this.clients, function(client) {
+                client.fulfillClient(value);
+            }, this);
+        }
+
+        setTimeout(fulfillAllClients.createDelegate(this));
+    },
+
+    /**
+     * Adds callbacks to the promise to be called when this promise is fulfilled or rejected.
+     * Returns a new promise that will be fulfilled or rejected when the callback is complete.
+     *
+     * @param      {Function}         onFulfilled  The fulfilled callback.
+     * @param      {Function}         onRejected   The rejected callback.
+     * @return     {BIT.SDS.Promise}  A new promise.
+     */
+    then: function(onFulfilled, onRejected) {
+        var promise = new BIT.SDS.Promise();
+        var client = {
+            onFulfilled: onFulfilled,
+            onRejected: onRejected,
+            promise: promise,
+
+            fulfillClient: function(result) {
+                if (Ext.isFunction(this.onFulfilled)) {
+                    try {
+                        var value = this.onFulfilled.call(undefined, result);
+                        this.promise.resolve(value);
+                    } catch (error) {
+                        this.promise.reject(error);
+                    }
+                } else {
+                    this.promise.resolve(result);
+                }
+            },
+
+            rejectClient: function(result) {
+                if (Ext.isFunction(this.onRejected)) {
+                    try {
+                        var value = this.onRejected.call(undefined, result);
+                        this.promise.resolve(value);
+                    } catch (error) {
+                        this.promise.reject(error);
+                    }
+                } else {
+                    this.promise.reject(result);
+                }
+            }
+        };
+
+        switch (this.state) {
+        case BIT.SDS.Promise.state.pending:
+            this.clients.push(client);
+            break;
+
+        case BIT.SDS.Promise.state.fulfilled:
+            setTimeout(client.fulfillClient.createDelegate(client, [this.result]));
+            break;
+
+        case BIT.SDS.Promise.state.rejected:
+            setTimeout(client.rejectClient.createDelegate(client, [this.result]));
+            break;
+        }
+
+        return promise;
+    }
+});
+
 Ext.namespace("BIT.SDS.Rectangle");
 
 Ext.define("BIT.SDS.Rectangle",
@@ -253,6 +603,125 @@ Ext.define("BIT.SDS._WindowUtil",
     },
 
     /**
+     * Sets all application windows to positions determined by the specified rectangle and to their
+     * default or predefined sizes. The algorithm used ensures that each window has a position that
+     * depends entirely on the specified rectangle, regardless of which applications are installed
+     * or which DSM version is used.
+     *
+     * If the option `useDefinedSizes` is set to `true`, the windows will be set to the sizes
+     * defined internally in this script. This results in a particular application window having the
+     * same size for all DSM versions regardless of its default size. The internally defined window
+     * sizes are the maximum of the standard window sizes for all application and DSM versions.
+     * However, since the standard size of an application window can increase with increasing
+     * application or DSM version number, the sizes in this script might be changed in future
+     * versions.
+     *
+     * **Note 1**: Open application windows are moved to the desired position, but unless the
+     * `useDefinedSizes` option is 'true', their size will not be changed immediately. In this case,
+     * you must manually close and reopen the windows to see the effects of resetting the window
+     * size. Before doing so, do not move or resize an open application window, as this will
+     * immediately set the restore size back to the current window size.
+     *
+     * **Note 2**: The Synology CMS (Central Management System) application
+     * (`SYNO.SDS.CMS.Application`) does not read the stored window size and position due to a bug
+     * in DSM. To ensure that this window has the correct size and position, each time this method
+     * is called, the window will be opened and set to the correct size and position.
+     *
+     * @param      {BIT.SDS.Rectangle=}  rectangle        The rectangle.
+     * @param      {boolean=}            useDefinedSizes  Use defined sizes (Default: `false`).
+     *
+     * @example
+     * BIT.SDS.WindowUtil.cascadeOverlapWindows();
+     *
+     * @example
+     * BIT.SDS.WindowUtil.cascadeOverlapWindows({x: 160, y: 139, width: 1640, height: 830});
+     *
+     * @example
+     * BIT.SDS.WindowUtil.cascadeOverlapWindows({x: 160, y: 139, width: 1640, height: 830}, true);
+     */
+    cascadeOverlapWindows: function(rectangle, useDefinedSizes) {
+        var rectangleBottomRightCorner;
+        var offsetX;
+        var offsetY;
+
+        var dsmVersion = BIT.SDS.Util.getDsmVersion();
+
+        if (!Ext.isObject(rectangle)) {
+            rectangle = this.suggestRectangle();
+        }
+
+        offsetX = rectangle.x;
+        offsetY = rectangle.y;
+
+        rectangleBottomRightCorner = {
+            x: rectangle.x + rectangle.width,
+            y: rectangle.y + rectangle.height
+        };
+
+        Ext.each(this.appWindowDataList, function(appWindowData) {
+            var restoreSizePosPropertyName = this.getRestoreSizePosPropertyName(appWindowData.appName);
+            var restoreSizePos;
+            var windowBottomRightCorner;
+            var appInstances;
+            var installedAppNames;
+
+            windowBottomRightCorner = {
+                x: offsetX + appWindowData.maxInitialWindowWidth,
+                y: offsetY + appWindowData.maxInitialWindowHeight
+            };
+
+            if (windowBottomRightCorner.x > rectangleBottomRightCorner.x && windowBottomRightCorner.y > rectangleBottomRightCorner.y) {
+                offsetX = rectangle.x;
+                offsetY = rectangle.y;
+            } else {
+                if (windowBottomRightCorner.x > rectangleBottomRightCorner.x) {
+                    if (offsetX === rectangle.x) {
+                        offsetY = rectangle.y;
+                    }
+                    offsetX = rectangle.x;
+                } else {
+                    if (windowBottomRightCorner.y > rectangleBottomRightCorner.y) {
+                        // offsetX += 30;
+                        offsetY = rectangle.y;
+                    }
+                }
+            }
+
+            if (appWindowData.dsmVersions.indexOf(dsmVersion) !== -1) {
+                restoreSizePos = {
+                    fromRestore: true,
+                    pageX: offsetX,
+                    pageY: offsetY
+                };
+
+                if (useDefinedSizes) {
+                    restoreSizePos.width  = appWindowData.maxInitialWindowWidth;
+                    restoreSizePos.height = appWindowData.maxInitialWindowHeight;
+                }
+
+                SYNO.SDS.UserSettings.setProperty(appWindowData.appName, restoreSizePosPropertyName, restoreSizePos);
+                this.setWindowSizeAndPosition(appWindowData.appName, restoreSizePos.pageX, restoreSizePos.pageY, restoreSizePos.width, restoreSizePos.height);
+
+                if (appWindowData.appName === "SYNO.SDS.CMS.Application") {
+                    appInstances = SYNO.SDS.AppMgr.getByAppName(appWindowData.appName);
+                    installedAppNames = SYNO.SDS.AppUtil.getApps();
+
+                    if ((appInstances.length === 0) && (installedAppNames.indexOf(appWindowData.appName) !== -1)) {
+                        SYNO.SDS.AppLaunch(appWindowData.appName, {}, false, function(appInstance) {
+                            if (Ext.isObject(appInstance)) {
+                                appInstance.window.setPagePosition(restoreSizePos.pageX, restoreSizePos.pageY);
+                            }
+                        }, this);
+                    }
+                }
+            }
+
+            offsetX += 30;
+            offsetY += 30;
+        }, this);
+    },
+
+    /**
      * Returns a list of all applications available for the DSM version installed on the
      * DiskStation, which open a window on the DSM desktop.
      *
@@ -296,129 +765,39 @@ Ext.define("BIT.SDS._WindowUtil",
     },
 
     /**
-     * Reset the window restore sizes and positions of the provided or all application(s). This sets
-     * the size and position of the application windows to the values and behavior after the initial
-     * DSM installation.
+     * Gets the size and position of an application window.
      *
-     * The window sizes will therefore be the default sizes of the individual application windows
-     * defined internally by the application.
-     *
-     * The window positions will not be fixed, but determined by an algorithm that offsets the upper
-     * left corner of each newly opened window.
-     *
-     * If you call this method without providing `appNames`, all application windows will be reset.
-     *
-     * **Note**: Open application windows will not change their size and position. You must manually
-     * close and reopen the windows to see the effects of the reset. Before doing so, do not move or
-     * resize an open application window, as this will immediately set the restore size and position
-     * back to the current window size and position.
-     *
-     * @param      {string[]|string|undefined}  appNames  The application name(s).
+     * @param      {Ext.Window}  appWindow  The application window.
+     * @return     {Object}      An object with `x`, `y`, `width` and `height` properties.
      *
      * @example
-     * BIT.SDS.WindowUtil.resetRestoreSizesAndPositions();
-     *
-     * @example
-     * BIT.SDS.WindowUtil.resetRestoreSizesAndPositions("SYNO.SDS.PkgManApp.Instance");
-     *
-     * @example
-     * BIT.SDS.WindowUtil.resetRestoreSizesAndPositions(["SYNO.SDS.HA.Instance", ...]);
+     * var appInstances = SYNO.SDS.AppMgr.getByAppName("SYNO.SDS.App.FileStation3.Instance");
+     * if (appInstances.length > 0) {
+     *   var appWindow = appInstances[0].window;
+     *   BIT.SDS.WindowUtil.getWindowSizeAndPosition(appWindow);
+     * }
+     * // => {x: 310, y: 349, width: 920, height: 560}
      */
-    resetRestoreSizesAndPositions: function(appNames) {
-        if (!appNames) appNames = this.getAppNames();
+    getWindowSizeAndPosition: function(appWindow) {
+        var windowSizeAndPosition;
+        var pagePosition;
 
-        Ext.each(appNames, function(appName) {
-            var restoreSizePosPropertyName = this.getRestoreSizePosPropertyName(appName);
-            var restoreSizePos = SYNO.SDS.UserSettings.getProperty(appName, restoreSizePosPropertyName);
+        if (!(appWindow instanceof Ext.Window)) return;
 
-            if (restoreSizePos) {
-                SYNO.SDS.UserSettings.removeProperty(appName, restoreSizePosPropertyName);
-            }
-        }, this);
-    },
+        windowSizeAndPosition = appWindow.getSizeAndPosition();
 
-    /**
-     * Reset the window restore sizes of the provided or all application(s). This sets the size of
-     * the application windows to the values and behavior after the initial DSM installation.
-     *
-     * The window sizes will therefore be the default sizes of the individual application windows
-     * defined internally by the application.
-     *
-     * If you call this method without providing `appNames`, all application windows will be reset.
-     *
-     * **Note**: Open application windows will not change their size. You must manually close and
-     * reopen the windows to see the effects of the reset. Before doing so, do not move or resize an
-     * open application window, as this will immediately set the restore size and position back to
-     * the current window size.
-     *
-     * @param      {string[]|string|undefined}  appNames  The application name(s).
-     *
-     * @example
-     * BIT.SDS.WindowUtil.resetRestoreSizes();
-     *
-     * @example
-     * BIT.SDS.WindowUtil.resetRestoreSizes("SYNO.SDS.PkgManApp.Instance");
-     *
-     * @example
-     * BIT.SDS.WindowUtil.resetRestoreSizes(["SYNO.SDS.HA.Instance", ...]);
-     */
-    resetRestoreSizes: function(appNames) {
-        if (!appNames) appNames = this.getAppNames();
+        if (!("pageX" in windowSizeAndPosition) || !("pageY" in windowSizeAndPosition)) {
+            pagePosition = this.translateElementPointsToPagePosition(appWindow, windowSizeAndPosition.x, windowSizeAndPosition.y);
+            windowSizeAndPosition.pageX = pagePosition.x;
+            windowSizeAndPosition.pageY = pagePosition.y;
+        }
 
-        Ext.each(appNames, function(appName) {
-            var restoreSizePosPropertyName = this.getRestoreSizePosPropertyName(appName);
-            var restoreSizePos = SYNO.SDS.UserSettings.getProperty(appName, restoreSizePosPropertyName);
-
-            if (restoreSizePos) {
-                delete restoreSizePos.width;
-                delete restoreSizePos.height;
-                SYNO.SDS.UserSettings.setProperty(appName, restoreSizePosPropertyName, restoreSizePos);
-            }
-        }, this);
-    },
-
-    /**
-     * Reset the window restore positions of the provided or all application(s). This sets the
-     * position of the application windows to the values and behavior after the initial DSM
-     * installation.
-     *
-     * The window positions will not be fixed, but determined by an algorithm that offsets the upper
-     * left corner of each newly opened window.
-     *
-     * If you call this method without providing `appNames`, all application windows will be reset.
-     *
-     * **Note**: Open application windows will not change their position. You must manually close
-     * and reopen the windows to see the effects of the reset. Before doing so, do not move or
-     * resize an open application window, as this will immediately set the restore size and position
-     * back to the current window size and position.
-     *
-     * @param      {string[]|string|undefined}  appNames  The application name(s).
-     *
-     * @example
-     * BIT.SDS.WindowUtil.resetRestorePositions();
-     *
-     * @example
-     * BIT.SDS.WindowUtil.resetRestorePositions("SYNO.SDS.PkgManApp.Instance");
-     *
-     * @example
-     * BIT.SDS.WindowUtil.resetRestorePositions(["SYNO.SDS.HA.Instance", ...]);
-     */
-    resetRestorePositions: function(appNames) {
-        if (!appNames) appNames = this.getAppNames();
-
-        Ext.each(appNames, function(appName) {
-            var restoreSizePosPropertyName = this.getRestoreSizePosPropertyName(appName);
-            var restoreSizePos = SYNO.SDS.UserSettings.getProperty(appName, restoreSizePosPropertyName);
-
-            if (restoreSizePos) {
-                delete restoreSizePos.fromRestore;
-                delete restoreSizePos.pageX;
-                delete restoreSizePos.pageY;
-                delete restoreSizePos.x;
-                delete restoreSizePos.y;
-                SYNO.SDS.UserSettings.setProperty(appName, restoreSizePosPropertyName, restoreSizePos);
-            }
-        }, this);
+        return {
+            x:      windowSizeAndPosition.pageX,
+            y:      windowSizeAndPosition.pageY,
+            width:  windowSizeAndPosition.width,
+            height: windowSizeAndPosition.height
+        };
     },
 
     /**
@@ -583,91 +962,129 @@ Ext.define("BIT.SDS._WindowUtil",
     },
 
     /**
-     * Translates the page x- and y-coordinates to left- and top-coordinates of the window relative
-     * to its parent. If a provided coordinate is undefined, the corresponding property in the
-     * returned object will also be undefined.
+     * Reset the window restore positions of the provided or all application(s). This sets the
+     * position of the application windows to the values and behavior after the initial DSM
+     * installation.
      *
-     * @param      {Ext.Window}        appWindow  The application window.
-     * @param      {number|undefined}  x          X-coordinate of the upper left egde.
-     * @param      {number|undefined}  y          Y-coordinate of the upper left egde.
-     * @return     {Object}            An object with `left` and `top` properties.
+     * The window positions will not be fixed, but determined by an algorithm that offsets the upper
+     * left corner of each newly opened window.
+     *
+     * If you call this method without providing `appNames`, all application windows will be reset.
+     *
+     * **Note**: Open application windows will not change their position. You must manually close
+     * and reopen the windows to see the effects of the reset. Before doing so, do not move or
+     * resize an open application window, as this will immediately set the restore size and position
+     * back to the current window size and position.
+     *
+     * @param      {string[]|string|undefined}  appNames  The application name(s).
      *
      * @example
-     * var appInstances = SYNO.SDS.AppMgr.getByAppName("SYNO.SDS.App.FileStation3.Instance");
-     * if (appInstances.length > 0) {
-     *   var appWindow = appInstances[0].window;
-     *   BIT.SDS.WindowUtil.translatePagePositionToElementPoints(appWindow, 0, 0);
-     * }
-     * // => {left: 0, top: -39}
+     * BIT.SDS.WindowUtil.resetRestorePositions();
+     *
+     * @example
+     * BIT.SDS.WindowUtil.resetRestorePositions("SYNO.SDS.PkgManApp.Instance");
+     *
+     * @example
+     * BIT.SDS.WindowUtil.resetRestorePositions(["SYNO.SDS.HA.Instance", ...]);
      */
-    translatePagePositionToElementPoints: function(appWindow, x, y) {
-        var offset = appWindow.getPositionEl().translatePoints(0, 0);
-        return {
-            left: x + offset.left,
-            top:  y + offset.top
-        };
+    resetRestorePositions: function(appNames) {
+        if (!appNames) appNames = this.getAppNames();
+
+        Ext.each(appNames, function(appName) {
+            var restoreSizePosPropertyName = this.getRestoreSizePosPropertyName(appName);
+            var restoreSizePos = SYNO.SDS.UserSettings.getProperty(appName, restoreSizePosPropertyName);
+
+            if (restoreSizePos) {
+                delete restoreSizePos.fromRestore;
+                delete restoreSizePos.pageX;
+                delete restoreSizePos.pageY;
+                delete restoreSizePos.x;
+                delete restoreSizePos.y;
+                SYNO.SDS.UserSettings.setProperty(appName, restoreSizePosPropertyName, restoreSizePos);
+            }
+        }, this);
     },
 
     /**
-     * Translates the left- and top-coordinates of the window relative to its parent to page x- and
-     * y-coordinates. If a provided coordinate is undefined, the corresponding property in the
-     * returned object will also be undefined.
+     * Reset the window restore sizes of the provided or all application(s). This sets the size of
+     * the application windows to the values and behavior after the initial DSM installation.
      *
-     * @param      {Ext.Window}        appWindow  The application window.
-     * @param      {number|undefined}  left       Left-coordinate of the upper left egde.
-     * @param      {number|undefined}  top        Top-coordinate of the upper left egde.
-     * @return     {Object}            An object with `x` and `y` properties.
+     * The window sizes will therefore be the default sizes of the individual application windows
+     * defined internally by the application.
+     *
+     * If you call this method without providing `appNames`, all application windows will be reset.
+     *
+     * **Note**: Open application windows will not change their size. You must manually close and
+     * reopen the windows to see the effects of the reset. Before doing so, do not move or resize an
+     * open application window, as this will immediately set the restore size and position back to
+     * the current window size.
+     *
+     * @param      {string[]|string|undefined}  appNames  The application name(s).
      *
      * @example
-     * var appInstances = SYNO.SDS.AppMgr.getByAppName("SYNO.SDS.App.FileStation3.Instance");
-     * if (appInstances.length > 0) {
-     *   var appWindow = appInstances[0].window;
-     *   BIT.SDS.WindowUtil.translateElementPointsToPagePosition(appWindow, 0, 0);
-     * }
-     * // => {x: 0, y: 39}
+     * BIT.SDS.WindowUtil.resetRestoreSizes();
+     *
+     * @example
+     * BIT.SDS.WindowUtil.resetRestoreSizes("SYNO.SDS.PkgManApp.Instance");
+     *
+     * @example
+     * BIT.SDS.WindowUtil.resetRestoreSizes(["SYNO.SDS.HA.Instance", ...]);
      */
-    translateElementPointsToPagePosition: function(appWindow, left, top) {
-        var offset = appWindow.getPositionEl().translatePoints(0, 0);
-        return {
-            x: left - offset.left,
-            y: top  - offset.top
-        };
+    resetRestoreSizes: function(appNames) {
+        if (!appNames) appNames = this.getAppNames();
+
+        Ext.each(appNames, function(appName) {
+            var restoreSizePosPropertyName = this.getRestoreSizePosPropertyName(appName);
+            var restoreSizePos = SYNO.SDS.UserSettings.getProperty(appName, restoreSizePosPropertyName);
+
+            if (restoreSizePos) {
+                delete restoreSizePos.width;
+                delete restoreSizePos.height;
+                SYNO.SDS.UserSettings.setProperty(appName, restoreSizePosPropertyName, restoreSizePos);
+            }
+        }, this);
     },
 
     /**
-     * Gets the size and position of an application window.
+     * Reset the window restore sizes and positions of the provided or all application(s). This sets
+     * the size and position of the application windows to the values and behavior after the initial
+     * DSM installation.
      *
-     * @param      {Ext.Window}  appWindow  The application window.
-     * @return     {Object}      An object with `x`, `y`, `width` and `height` properties.
+     * The window sizes will therefore be the default sizes of the individual application windows
+     * defined internally by the application.
+     *
+     * The window positions will not be fixed, but determined by an algorithm that offsets the upper
+     * left corner of each newly opened window.
+     *
+     * If you call this method without providing `appNames`, all application windows will be reset.
+     *
+     * **Note**: Open application windows will not change their size and position. You must manually
+     * close and reopen the windows to see the effects of the reset. Before doing so, do not move or
+     * resize an open application window, as this will immediately set the restore size and position
+     * back to the current window size and position.
+     *
+     * @param      {string[]|string|undefined}  appNames  The application name(s).
      *
      * @example
-     * var appInstances = SYNO.SDS.AppMgr.getByAppName("SYNO.SDS.App.FileStation3.Instance");
-     * if (appInstances.length > 0) {
-     *   var appWindow = appInstances[0].window;
-     *   BIT.SDS.WindowUtil.getWindowSizeAndPosition(appWindow);
-     * }
-     * // => {x: 310, y: 349, width: 920, height: 560}
+     * BIT.SDS.WindowUtil.resetRestoreSizesAndPositions();
+     *
+     * @example
+     * BIT.SDS.WindowUtil.resetRestoreSizesAndPositions("SYNO.SDS.PkgManApp.Instance");
+     *
+     * @example
+     * BIT.SDS.WindowUtil.resetRestoreSizesAndPositions(["SYNO.SDS.HA.Instance", ...]);
      */
-    getWindowSizeAndPosition: function(appWindow) {
-        var windowSizeAndPosition;
-        var pagePosition;
+    resetRestoreSizesAndPositions: function(appNames) {
+        if (!appNames) appNames = this.getAppNames();
 
-        if (!(appWindow instanceof Ext.Window)) return;
+        Ext.each(appNames, function(appName) {
+            var restoreSizePosPropertyName = this.getRestoreSizePosPropertyName(appName);
+            var restoreSizePos = SYNO.SDS.UserSettings.getProperty(appName, restoreSizePosPropertyName);
 
-        windowSizeAndPosition = appWindow.getSizeAndPosition();
-
-        if (!("pageX" in windowSizeAndPosition) || !("pageY" in windowSizeAndPosition)) {
-            pagePosition = this.translateElementPointsToPagePosition(appWindow, windowSizeAndPosition.x, windowSizeAndPosition.y);
-            windowSizeAndPosition.pageX = pagePosition.x;
-            windowSizeAndPosition.pageY = pagePosition.y;
-        }
-
-        return {
-            x:      windowSizeAndPosition.pageX,
-            y:      windowSizeAndPosition.pageY,
-            width:  windowSizeAndPosition.width,
-            height: windowSizeAndPosition.height
-        };
+            if (restoreSizePos) {
+                SYNO.SDS.UserSettings.removeProperty(appName, restoreSizePosPropertyName);
+            }
+        }, this);
     },
 
     /**
@@ -818,472 +1235,55 @@ Ext.define("BIT.SDS._WindowUtil",
     },
 
     /**
-     * Sets all application windows to positions determined by the specified rectangle and to their
-     * default or predefined sizes. The algorithm used ensures that each window has a position that
-     * depends entirely on the specified rectangle, regardless of which applications are installed
-     * or which DSM version is used.
+     * Translates the left- and top-coordinates of the window relative to its parent to page x- and
+     * y-coordinates. If a provided coordinate is undefined, the corresponding property in the
+     * returned object will also be undefined.
      *
-     * If the option `useDefinedSizes` is set to `true`, the windows will be set to the sizes
-     * defined internally in this script. This results in a particular application window having the
-     * same size for all DSM versions regardless of its default size. The internally defined window
-     * sizes are the maximum of the standard window sizes for all application and DSM versions.
-     * However, since the standard size of an application window can increase with increasing
-     * application or DSM version number, the sizes in this script might be changed in future
-     * versions.
-     *
-     * **Note 1**: Open application windows are moved to the desired position, but unless the
-     * `useDefinedSizes` option is 'true', their size will not be changed immediately. In this case,
-     * you must manually close and reopen the windows to see the effects of resetting the window
-     * size. Before doing so, do not move or resize an open application window, as this will
-     * immediately set the restore size back to the current window size.
-     *
-     * **Note 2**: The Synology CMS (Central Management System) application
-     * (`SYNO.SDS.CMS.Application`) does not read the stored window size and position due to a bug
-     * in DSM. To ensure that this window has the correct size and position, each time this method
-     * is called, the window will be opened and set to the correct size and position.
-     *
-     * @param      {BIT.SDS.Rectangle=}  rectangle        The rectangle.
-     * @param      {boolean=}            useDefinedSizes  Use defined sizes (Default: `false`).
+     * @param      {Ext.Window}        appWindow  The application window.
+     * @param      {number|undefined}  left       Left-coordinate of the upper left egde.
+     * @param      {number|undefined}  top        Top-coordinate of the upper left egde.
+     * @return     {Object}            An object with `x` and `y` properties.
      *
      * @example
-     * BIT.SDS.WindowUtil.cascadeOverlapWindows();
-     *
-     * @example
-     * BIT.SDS.WindowUtil.cascadeOverlapWindows({x: 160, y: 139, width: 1640, height: 830});
-     *
-     * @example
-     * BIT.SDS.WindowUtil.cascadeOverlapWindows({x: 160, y: 139, width: 1640, height: 830}, true);
+     * var appInstances = SYNO.SDS.AppMgr.getByAppName("SYNO.SDS.App.FileStation3.Instance");
+     * if (appInstances.length > 0) {
+     *   var appWindow = appInstances[0].window;
+     *   BIT.SDS.WindowUtil.translateElementPointsToPagePosition(appWindow, 0, 0);
+     * }
+     * // => {x: 0, y: 39}
      */
-    cascadeOverlapWindows: function(rectangle, useDefinedSizes) {
-        var rectangleBottomRightCorner;
-        var offsetX;
-        var offsetY;
-
-        var dsmVersion = BIT.SDS.Util.getDsmVersion();
-
-        if (!Ext.isObject(rectangle)) {
-            rectangle = this.suggestRectangle();
-        }
-
-        offsetX = rectangle.x;
-        offsetY = rectangle.y;
-
-        rectangleBottomRightCorner = {
-            x: rectangle.x + rectangle.width,
-            y: rectangle.y + rectangle.height
+    translateElementPointsToPagePosition: function(appWindow, left, top) {
+        var offset = appWindow.getPositionEl().translatePoints(0, 0);
+        return {
+            x: left - offset.left,
+            y: top  - offset.top
         };
-
-        Ext.each(this.appWindowDataList, function(appWindowData) {
-            var restoreSizePosPropertyName = this.getRestoreSizePosPropertyName(appWindowData.appName);
-            var restoreSizePos;
-            var windowBottomRightCorner;
-            var appInstances;
-            var installedAppNames;
-
-            windowBottomRightCorner = {
-                x: offsetX + appWindowData.maxInitialWindowWidth,
-                y: offsetY + appWindowData.maxInitialWindowHeight
-            };
-
-            if (windowBottomRightCorner.x > rectangleBottomRightCorner.x && windowBottomRightCorner.y > rectangleBottomRightCorner.y) {
-                offsetX = rectangle.x;
-                offsetY = rectangle.y;
-            } else {
-                if (windowBottomRightCorner.x > rectangleBottomRightCorner.x) {
-                    if (offsetX === rectangle.x) {
-                        offsetY = rectangle.y;
-                    }
-                    offsetX = rectangle.x;
-                } else {
-                    if (windowBottomRightCorner.y > rectangleBottomRightCorner.y) {
-                        // offsetX += 30;
-                        offsetY = rectangle.y;
-                    }
-                }
-            }
-
-            if (appWindowData.dsmVersions.indexOf(dsmVersion) !== -1) {
-                restoreSizePos = {
-                    fromRestore: true,
-                    pageX: offsetX,
-                    pageY: offsetY
-                };
-
-                if (useDefinedSizes) {
-                    restoreSizePos.width  = appWindowData.maxInitialWindowWidth;
-                    restoreSizePos.height = appWindowData.maxInitialWindowHeight;
-                }
-
-                SYNO.SDS.UserSettings.setProperty(appWindowData.appName, restoreSizePosPropertyName, restoreSizePos);
-                this.setWindowSizeAndPosition(appWindowData.appName, restoreSizePos.pageX, restoreSizePos.pageY, restoreSizePos.width, restoreSizePos.height);
-
-                if (appWindowData.appName === "SYNO.SDS.CMS.Application") {
-                    appInstances = SYNO.SDS.AppMgr.getByAppName(appWindowData.appName);
-                    installedAppNames = SYNO.SDS.AppUtil.getApps();
-
-                    if ((appInstances.length === 0) && (installedAppNames.indexOf(appWindowData.appName) !== -1)) {
-                        SYNO.SDS.AppLaunch(appWindowData.appName, {}, false, function(appInstance) {
-                            if (Ext.isObject(appInstance)) {
-                                appInstance.window.setPagePosition(restoreSizePos.pageX, restoreSizePos.pageY);
-                            }
-                        }, this);
-                    }
-                }
-            }
-
-            offsetX += 30;
-            offsetY += 30;
-        }, this);
-    }
-});
-
-Ext.namespace("BIT.SDS.Promise");
-
-Ext.define("BIT.SDS.Promise",
-/**
- * @lends      BIT.SDS.Promise.prototype
- */
-{
-    /**
-     * @lends      BIT.SDS.Promise
-     */
-    statics: {
-        state: {
-            pending:   "pending",
-            fulfilled: "fulfilled",
-            rejected:  "rejected"
-        },
-
-        /**
-         * Returns a promise that is resolved with the passed value.
-         *
-         * @param      {*}                value   The value.
-         * @return     {BIT.SDS.Promise}  A new resolving promise.
-         */
-        resolve: function(value) {
-            return new BIT.SDS.Promise(function(resolve, reject) {
-                resolve(value);
-            });
-        },
-
-        /**
-         * Returns a promise that is rejected with the passed reason.
-         *
-         * @param      {*}                reason  The reason.
-         * @return     {BIT.SDS.Promise}  A new rejecting promise.
-         */
-        reject: function(reason) {
-            return new BIT.SDS.Promise(function(resolve, reject) {
-                reject(reason);
-            });
-        },
-
-        /**
-         * Returns a promise that resolves when all of the promises passed have resolved or when the
-         * array contains no promises. It rejects with the reason of the first promise that rejects.
-         *
-         * @param      {BIT.SDS.Promise[]}  promises  The promises.
-         * @return     {BIT.SDS.Promise}    A new promise.
-         */
-        all: function(promises) {
-            return new BIT.SDS.Promise(function(resolve, reject) {
-                var results = [];
-                var resolved = 0;
-
-                Ext.each(promises, function(promise, i) {
-                    if (!promise || !Ext.isFunction(promise.then)) {
-                        promise = BIT.SDS.Promise.resolve(promise);
-                    }
-
-                    promise
-                        .then(function(value) {
-                            results[i] = value;
-                            resolved++;
-
-                            if (resolved === promises.length) resolve(results);
-                        })
-                        .catch(function(reason) {
-                            reject(reason);
-                        });
-                }, this);
-
-                if (promises.length === 0) resolve(results);
-            });
-        },
-
-        /**
-         * Returns a new promise that resolves or rejects as soon as one of the promises passed
-         * resolves or rejects, with the value or reason from that promise.
-         *
-         * @param      {BIT.SDS.Promise[]}  promises  The promises.
-         * @return     {BIT.SDS.Promise}    A new promise.
-         */
-        race: function(promises) {
-            return new BIT.SDS.Promise(function(resolve, reject) {
-                Ext.each(promises, function(promise) {
-                    promise.then(resolve, reject);
-                }, this);
-            });
-        },
-
-        /**
-         * Tries to resolve a promise multiple times if it is rejected. The passed function will be
-         * called repeatedly until the promise returned by the function is resolved or the maximum
-         * number of attempts is reached.
-         *
-         * Returns a new promise that is fulfilled with the fulfillment value of the promise
-         * returned by the function, or is rejected with the same reason as the promise returned by
-         * the function in the last attempt.
-         *
-         * Subsequent calls of the function will be deferred by a delay specified in milliseconds.
-         *
-         * @param      {Function}         fn      The function returning a promise.
-         * @param      {number}           times   The maximum number of attempts.
-         * @param      {number}           delay   The delay.
-         * @return     {BIT.SDS.Promise}  A new promise.
-         *
-         * @example
-         * var trySomething = function() {
-         *   var resolver = function(resolve, reject) {
-         *     ... // Try to resolve promise
-         *   };
-         *   return new BIT.SDS.Promise(resolver);
-         * };
-         * BIT.SDS.Promise.retry(trySomething, 5, 5000)
-         *   .then(...)
-         *   .catch(...);
-         */
-        retry: function(fn, times, delay) {
-            return new BIT.SDS.Promise(function(resolve, reject) {
-                var lastRejectReason;
-                var retry = function() {
-                    if (times > 0) {
-                        times--;
-                        fn()
-                            .then(resolve)
-                            .catch(function(reason) {
-                                lastRejectReason = reason;
-                                setTimeout(retry, delay);
-                            });
-                    } else {
-                        reject(lastRejectReason);
-                    }
-                };
-                retry();
-            });
-        }
-    },
-
-    state: undefined,
-
-    clients: undefined,
-
-    result: undefined,
-
-    /**
-     * Creates a new {@link BIT.SDS.Promise} instance.
-     *
-     * @method     BIT.SDS.Promise
-     * @constructs
-     *
-     * @param      {Function}  resolver  The resolver function.
-     */
-    constructor: function(resolver) {
-        this.state = BIT.SDS.Promise.state.pending;
-        this.clients = [];
-        this.result = undefined;
-
-        function resolve(value) {
-            this.resolve(value);
-        }
-
-        function reject(reason) {
-            this.reject(reason);
-        }
-
-        if (Ext.isFunction(resolver)) {
-            try {
-                resolver(resolve.createDelegate(this), reject.createDelegate(this));
-            } catch (error) {
-                this.reject(error);
-            }
-        } else if (arguments.length > 0) {
-            throw Error("Promise resolver " + resolver + " is not a function");
-        }
     },
 
     /**
-     * Resolves the promise with the passed value.
+     * Translates the page x- and y-coordinates to left- and top-coordinates of the window relative
+     * to its parent. If a provided coordinate is undefined, the corresponding property in the
+     * returned object will also be undefined.
      *
-     * @param      {*}       value   The value.
-     */
-    resolve: function(value) {
-        var alreadyCalled = false;
-        var then;
-
-        function onFulfilled(value) {
-            if (!alreadyCalled) {
-                alreadyCalled = true;
-                this.resolve(value);
-            }
-        }
-
-        function onRejected(reason) {
-            if (!alreadyCalled) {
-                alreadyCalled = true;
-                this.reject(reason);
-            }
-        }
-
-        if (this.state !== BIT.SDS.Promise.state.pending) return;
-
-        if (value === this) return this.reject(Error("A promise cannot be resolved by itself"));
-
-        if (value && (Ext.isFunction(value) || Ext.isObject(value))) {
-            try {
-                then = value.then;
-
-                if (Ext.isFunction(then)) {
-                    then.call(value, onFulfilled.createDelegate(this), onRejected.createDelegate(this));
-
-                    return;
-                }
-            } catch (error) {
-                if (!alreadyCalled) this.reject(error);
-
-                return;
-            }
-        }
-
-        this.state = BIT.SDS.Promise.state.fulfilled;
-        this.result = value;
-
-        function fulfillAllClients() {
-            Ext.each(this.clients, function(client) {
-                client.fulfillClient(value);
-            }, this);
-        }
-
-        setTimeout(fulfillAllClients.createDelegate(this));
-    },
-
-    /**
-     * Rejects the promise with the passed reason.
+     * @param      {Ext.Window}        appWindow  The application window.
+     * @param      {number|undefined}  x          X-coordinate of the upper left egde.
+     * @param      {number|undefined}  y          Y-coordinate of the upper left egde.
+     * @return     {Object}            An object with `left` and `top` properties.
      *
-     * @param      {*}   reason  The reason.
+     * @example
+     * var appInstances = SYNO.SDS.AppMgr.getByAppName("SYNO.SDS.App.FileStation3.Instance");
+     * if (appInstances.length > 0) {
+     *   var appWindow = appInstances[0].window;
+     *   BIT.SDS.WindowUtil.translatePagePositionToElementPoints(appWindow, 0, 0);
+     * }
+     * // => {left: 0, top: -39}
      */
-    reject: function(reason) {
-        if (this.state !== BIT.SDS.Promise.state.pending) return;
-
-        this.state = BIT.SDS.Promise.state.rejected;
-        this.result = reason;
-
-        function rejectAllClients() {
-            Ext.each(this.clients, function(client) {
-                client.rejectClient(reason);
-            }, this);
-        }
-
-        setTimeout(rejectAllClients.createDelegate(this));
-    },
-
-    /**
-     * Adds callbacks to the promise to be called when this promise is fulfilled or rejected.
-     * Returns a new promise that will be fulfilled or rejected when the callback is complete.
-     *
-     * @param      {Function}         onFulfilled  The fulfilled callback.
-     * @param      {Function}         onRejected   The rejected callback.
-     * @return     {BIT.SDS.Promise}  A new promise.
-     */
-    then: function(onFulfilled, onRejected) {
-        var promise = new BIT.SDS.Promise();
-        var client = {
-            onFulfilled: onFulfilled,
-            onRejected: onRejected,
-            promise: promise,
-
-            fulfillClient: function(result) {
-                if (Ext.isFunction(this.onFulfilled)) {
-                    try {
-                        var value = this.onFulfilled.call(undefined, result);
-                        this.promise.resolve(value);
-                    } catch (error) {
-                        this.promise.reject(error);
-                    }
-                } else {
-                    this.promise.resolve(result);
-                }
-            },
-
-            rejectClient: function(result) {
-                if (Ext.isFunction(this.onRejected)) {
-                    try {
-                        var value = this.onRejected.call(undefined, result);
-                        this.promise.resolve(value);
-                    } catch (error) {
-                        this.promise.reject(error);
-                    }
-                } else {
-                    this.promise.reject(result);
-                }
-            }
+    translatePagePositionToElementPoints: function(appWindow, x, y) {
+        var offset = appWindow.getPositionEl().translatePoints(0, 0);
+        return {
+            left: x + offset.left,
+            top:  y + offset.top
         };
-
-        switch (this.state) {
-        case BIT.SDS.Promise.state.pending:
-            this.clients.push(client);
-            break;
-
-        case BIT.SDS.Promise.state.fulfilled:
-            setTimeout(client.fulfillClient.createDelegate(client, [this.result]));
-            break;
-
-        case BIT.SDS.Promise.state.rejected:
-            setTimeout(client.rejectClient.createDelegate(client, [this.result]));
-            break;
-        }
-
-        return promise;
-    },
-
-    /**
-     * Adds a callback to the promise to be called when this promise is rejected. Returns a new
-     * promise that will be rejected when the callback is complete.
-     *
-     * @param      {Function}         onRejected  The rejected callback.
-     * @return     {BIT.SDS.Promise}  A new promise.
-     */
-    catch: function(onRejected) {
-        return this.then(null, onRejected);
-    },
-
-    /**
-     * Adds a callback to the promise to be called when this promise is fulfilled or rejected.
-     * Returns a new promise that will be fulfilled or rejected when the callback is complete.
-     *
-     * @param      {Function}         onFinally  The finally callback.
-     * @return     {BIT.SDS.Promise}  A new promise.
-     */
-    finally: function(onFinally) {
-        if (!Ext.isFunction(onFinally)) return this.then(onFinally, onFinally);
-
-        function onFulfilled(value) {
-            return new BIT.SDS.Promise(function(resolve) {
-                resolve(onFinally());
-            }).then(function() {
-                return value;
-            });
-        }
-
-        function onRejected(reason) {
-            return new BIT.SDS.Promise(function(resolve) {
-                resolve(onFinally());
-            }).then(function() {
-                throw reason;
-            });
-        }
-
-        return this.then(onFulfilled.createDelegate(this), onRejected.createDelegate(this));
     }
 });
 
