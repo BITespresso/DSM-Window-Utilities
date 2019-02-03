@@ -234,7 +234,7 @@ Ext.define("BIT.SDS._WindowUtil",
      *
      * @example
      * BIT.SDS.init();
-     * BIT.SDS.WindowUtil.getAllAppNames();
+     * BIT.SDS.WindowUtil.getAppNames();
      * // => ["SYNO.SDS.AdminCenter.Application", ...]
      */
     constructor: function() {
@@ -259,10 +259,10 @@ Ext.define("BIT.SDS._WindowUtil",
      * @return     {string[]}  The list of application names.
      *
      * @example
-     * BIT.SDS.WindowUtil.getAllAppNames();
+     * BIT.SDS.WindowUtil.getAppNames();
      * // => ["SYNO.SDS.AdminCenter.Application", ...]
      */
-    getAllAppNames: function() {
+    getAppNames: function() {
         var appNames = [];
         var dsmVersion = BIT.SDS.Util.getDsmVersion();
 
@@ -296,9 +296,9 @@ Ext.define("BIT.SDS._WindowUtil",
     },
 
     /**
-     * Removes the window restore sizes and positions of the passed application(s). This will reset
-     * the size and position of the application windows to the values and behavior after the initial
-     * DSM installation.
+     * Removes the window restore sizes and positions of the provided or all application(s). This
+     * will reset the size and position of the application windows to the values and behavior after
+     * the initial DSM installation.
      *
      * The window sizes will therefore be the default sizes of the individual application windows
      * defined internally by the application.
@@ -306,12 +306,17 @@ Ext.define("BIT.SDS._WindowUtil",
      * The window positions will not be fixed, but determined by an algorithm that offsets the upper
      * left corner of each newly opened window.
      *
-     * Note: Open application windows will not change their size and position. You must manually
-     * close and reopen the windows to see the effects of the reset. Do not move or resize an
-     * already open application window, as this immediately sets the restore size and position again
-     * to the current window size and position.
+     * If you call this method without providing `appNames`, all application windows will be reset.
      *
-     * @param      {string[]|string}  appNames  The application name(s).
+     * **Note**: Open application windows will not change their size and position. You must manually
+     * close and reopen the windows to see the effects of the reset. Before doing so, do not move or
+     * resize an open application window, as this will immediately set the restore size and position
+     * back to the current window size and position.
+     *
+     * @param      {string[]|string|undefined}  appNames  The application name(s).
+     *
+     * @example
+     * BIT.SDS.WindowUtil.removeRestoreSizesAndPositions();
      *
      * @example
      * BIT.SDS.WindowUtil.removeRestoreSizesAndPositions("SYNO.SDS.PkgManApp.Instance");
@@ -320,6 +325,8 @@ Ext.define("BIT.SDS._WindowUtil",
      * BIT.SDS.WindowUtil.removeRestoreSizesAndPositions(["SYNO.SDS.HA.Instance", ...]);
      */
     removeRestoreSizesAndPositions: function(appNames) {
+        if (!appNames) appNames = this.getAppNames();
+
         Ext.each(appNames, function(appName) {
             var restoreSizePosPropertyName = this.getRestoreSizePosPropertyName(appName);
             var restoreSizePos = SYNO.SDS.UserSettings.getProperty(appName, restoreSizePosPropertyName);
@@ -331,38 +338,24 @@ Ext.define("BIT.SDS._WindowUtil",
     },
 
     /**
-     * Removes the window restore sizes and positions of all applications. This will reset the size
-     * and position of the application windows to the values and behavior after the initial DSM
+     * Removes the window restore sizes of the provided or all application(s). This will reset the
+     * size of the application windows to the values and behavior after the initial DSM
      * installation.
      *
      * The window sizes will therefore be the default sizes of the individual application windows
      * defined internally by the application.
      *
-     * The window positions will not be fixed, but determined by an algorithm that offsets the upper
-     * left corner of each newly opened window.
+     * If you call this method without providing `appNames`, all application windows will be reset.
      *
-     * Note: Open application windows will not change their size and position. You must manually
-     * close and reopen the windows to see the effects of the reset. Do not move or resize an
-     * already open application window, as this immediately sets the restore size and position again
-     * to the current window size and position.
-     */
-    removeAllRestoreSizesAndPositions: function() {
-        this.removeRestoreSizesAndPositions(this.getAllAppNames());
-    },
-
-    /**
-     * Removes the window restore sizes of the passed application(s). This will reset the size of
-     * the application windows to the values after the initial DSM installation.
+     * **Note**: Open application windows will not change their size. You must manually close and
+     * reopen the windows to see the effects of the reset. Before doing so, do not move or resize an
+     * open application window, as this will immediately set the restore size and position back to
+     * the current window size.
      *
-     * The window sizes will therefore be the default sizes of the individual application windows
-     * defined internally by the application.
+     * @param      {string[]|string|undefined}  appNames  The application name(s).
      *
-     * Note: Open application windows will not change their size. You must manually close and reopen
-     * the windows to see the effects of the reset. Do not move or resize an already open
-     * application window, as this immediately sets the restore size and position again to the
-     * current window size and position.
-     *
-     * @param      {string[]|string}  appNames  The application name(s).
+     * @example
+     * BIT.SDS.WindowUtil.removeRestoreSizes();
      *
      * @example
      * BIT.SDS.WindowUtil.removeRestoreSizes("SYNO.SDS.PkgManApp.Instance");
@@ -371,6 +364,8 @@ Ext.define("BIT.SDS._WindowUtil",
      * BIT.SDS.WindowUtil.removeRestoreSizes(["SYNO.SDS.HA.Instance", ...]);
      */
     removeRestoreSizes: function(appNames) {
+        if (!appNames) appNames = this.getAppNames();
+
         Ext.each(appNames, function(appName) {
             var restoreSizePosPropertyName = this.getRestoreSizePosPropertyName(appName);
             var restoreSizePos = SYNO.SDS.UserSettings.getProperty(appName, restoreSizePosPropertyName);
@@ -384,35 +379,24 @@ Ext.define("BIT.SDS._WindowUtil",
     },
 
     /**
-     * Removes the window restore sizes of all applications. This will reset the size of the
-     * application windows to the values after the initial DSM installation.
-     *
-     * The window sizes will therefore be the default sizes of the individual application windows
-     * defined internally by the application.
-     *
-     * Note: Open application windows will not change their size. You must manually close and reopen
-     * the windows to see the effects of the reset. Do not move or resize an already open
-     * application window, as this immediately sets the restore size and position again to the
-     * current window size and position.
-     */
-    removeAllRestoreSizes: function() {
-        this.removeRestoreSizes(this.getAllAppNames());
-    },
-
-    /**
-     * Removes the window restore positions of the passed application(s). This will reset the
-     * position of the application windows to the values and behavior after the initial DSM
+     * Removes the window restore positions of the provided or all application(s). This will reset
+     * the position of the application windows to the values and behavior after the initial DSM
      * installation.
      *
      * The window positions will not be fixed, but determined by an algorithm that offsets the upper
      * left corner of each newly opened window.
      *
-     * Note: Open application windows will not change their position. You must manually close and
-     * reopen the windows to see the effects of the reset. Do not move or resize an already open
-     * application window, as this immediately sets the restore size and position again to the
-     * current window size and position.
+     * If you call this method without providing `appNames`, all application windows will be reset.
      *
-     * @param      {string[]|string}  appNames  The application name(s).
+     * **Note**: Open application windows will not change their position. You must manually close
+     * and reopen the windows to see the effects of the reset. Before doing so, do not move or
+     * resize an open application window, as this will immediately set the restore size and position
+     * back to the current window size and position.
+     *
+     * @param      {string[]|string|undefined}  appNames  The application name(s).
+     *
+     * @example
+     * BIT.SDS.WindowUtil.removeRestorePositions();
      *
      * @example
      * BIT.SDS.WindowUtil.removeRestorePositions("SYNO.SDS.PkgManApp.Instance");
@@ -421,6 +405,8 @@ Ext.define("BIT.SDS._WindowUtil",
      * BIT.SDS.WindowUtil.removeRestorePositions(["SYNO.SDS.HA.Instance", ...]);
      */
     removeRestorePositions: function(appNames) {
+        if (!appNames) appNames = this.getAppNames();
+
         Ext.each(appNames, function(appName) {
             var restoreSizePosPropertyName = this.getRestoreSizePosPropertyName(appName);
             var restoreSizePos = SYNO.SDS.UserSettings.getProperty(appName, restoreSizePosPropertyName);
@@ -437,23 +423,7 @@ Ext.define("BIT.SDS._WindowUtil",
     },
 
     /**
-     * Removes the window restore positions of all applications. This will reset the position of the
-     * application windows to the values and behavior after the initial DSM installation.
-     *
-     * The window positions will not be fixed, but determined by an algorithm that offsets the upper
-     * left corner of each newly opened window.
-     *
-     * Note: Open application windows will not change their position. You must manually close and
-     * reopen the windows to see the effects of the reset. Do not move or resize an already open
-     * application window, as this immediately sets the restore size and position again to the
-     * current window size and position.
-     */
-    removeAllRestorePositions: function() {
-        this.removeRestorePositions(this.getAllAppNames());
-    },
-
-    /**
-     * Retrieves the window size of the passed application by launching the application. If the
+     * Retrieves the window size of the provided application by launching the application. If the
      * application window is already open, the current size of this window is returned.
      *
      * The application will be launched after a delay specified in milliseconds.
@@ -488,8 +458,8 @@ Ext.define("BIT.SDS._WindowUtil",
     },
 
     /**
-     * Retrieves the window size(s) of the passed application(s). To retrieve the window sizes,
-     * different methods will be applied until the first succeeds:
+     * Retrieves the window size(s) of the provided or all application(s). To retrieve the window
+     * sizes, different methods will be applied until the first succeeds:
      *
      * * Get the window size from the restore size property
      * * Get the size from an open window of the respective application
@@ -498,14 +468,19 @@ Ext.define("BIT.SDS._WindowUtil",
      * Launching the application(s) is an asychronous operation, therefore this method returns a
      * promise that is fulfilled with an array of the window sizes.
      *
-     * @param      {string[]|string}  appNames  The application name(s).
-     * @return     {BIT.SDS.Promise}  A new promise.
+     * If you call this method without providing `appNames`, all application window sizes will be
+     * retrieved.
+     *
+     * @param      {string[]|string|undefined}  appNames  The application name(s).
+     * @return     {BIT.SDS.Promise}            A new promise.
      */
     getWindowSizesPromise: function(appNames) {
         var rejectAfterTimeoutPromise;
         var promises = [];
         var launchDelay = 0;
         var launchDelayIncrement = 0;
+
+        if (!appNames) appNames = this.getAppNames();
 
         Ext.each(appNames, function(appName) {
             var restoreSizePosPropertyName = this.getRestoreSizePosPropertyName(appName);
@@ -550,54 +525,54 @@ Ext.define("BIT.SDS._WindowUtil",
     },
 
     /**
-     * Retrieves the windows sizes of all applications. To retrieve the window sizes, different
-     * methods will be applied until the first succeeds:
+     * Retrieves the window size(s) of the provided or all application(s). To retrieve the window
+     * sizes, different methods will be applied until the first succeeds:
      *
      * * Get the window size from the restore size property
      * * Get the size from an open window of the respective application
      * * Launch the application and get the size of the opened window
      *
-     * Launching the applications is an asychronous operation, therefore this method returns a
+     * Launching the application(s) is an asychronous operation, therefore this method returns a
      * promise that is fulfilled with an array of the window sizes.
      *
-     * @return     {BIT.SDS.Promise}  A new promise.
-     */
-    getAllWindowSizesPromise: function() {
-        return this.getWindowSizesPromise(this.getAllAppNames());
-    },
-
-    /**
-     * Retrieves the windows sizes of all applications. To retrieve the window sizes, different
-     * methods will be applied until the first succeeds:
+     * If you call this method without providing `appNames`, all application window sizes will be
+     * retrieved.
      *
-     * * Get the window size from the restore size property
-     * * Get the size from an open window of the respective application
-     * * Launch the application and get the size of the opened window
-     *
-     * Launching the applications is an asychronous operation, therefore this method returns a
-     * promise that is fulfilled with an array of the window sizes.
-     *
-     * In addition to {@link getAllWindowSizesPromise}, this method will make several attempts to
+     * In addition to {@link getWindowSizesPromise}, this method will make several attempts to
      * determine window sizes and is therefore more robust.
      *
-     * @return     {BIT.SDS.Promise}  A new promise.
+     * @param      {string[]|string|undefined}  appNames  The application name(s).
+     * @return     {BIT.SDS.Promise}            A new promise.
      */
-    getAllWindowSizesPromiseWithRetry: function() {
-        return BIT.SDS.Promise.retry(BIT.SDS.WindowUtil.getAllWindowSizesPromise.createDelegate(this), 5, 5000);
+    getWindowSizesPromiseWithRetry: function(appNames) {
+        if (!appNames) appNames = this.getAppNames();
+
+        return BIT.SDS.Promise.retry(BIT.SDS.WindowUtil.getWindowSizesPromise.createDelegate(this, [appNames]), 5, 5000);
     },
 
     /**
-     * Prints the windows sizes of all applications to the console in CSV format. The record format
-     * is: `<application name>,<width>,<height>`
+     * Prints the window size(s) of the provided or all application(s) to the console in CSV format.
+     * The record format is: `<application name>,<width>,<height>`
+     *
+     * If you call this method without providing `appNames`, all application window sizes will be
+     * printed.
+     *
+     * @param      {string[]|string|undefined}  appNames  The application name(s).
      *
      * @example
-     * BIT.SDS.WindowUtil.printAllWindowSizes();
+     * BIT.SDS.WindowUtil.printWindowSizes();
      * // SYNO.SDS.AdminCenter.Application;994;570
      * // SYNO.SDS.App.FileStation3.Instance;920;560
      * // ...
+     *
+     * @example
+     * BIT.SDS.WindowUtil.printWindowSizes("SYNO.SDS.App.FileStation3.Instance");
+     * // SYNO.SDS.App.FileStation3.Instance;920;560
      */
-    printAllWindowSizes: function() {
-        BIT.SDS.WindowUtil.getAllWindowSizesPromiseWithRetry()
+    printWindowSizes: function(appNames) {
+        if (!appNames) appNames = this.getAppNames();
+
+        BIT.SDS.WindowUtil.getWindowSizesPromiseWithRetry(appNames)
             .then(function(results) {
                 Ext.each(results, function(result) {
                     console.log(this.appName + "," + this.width + "," + this.height);
@@ -770,7 +745,7 @@ Ext.define("BIT.SDS._WindowUtil",
 
     /**
      * Calculates a suggestion for the rectangle which can be used as input for
-     * {@link cascadeOverlapAllWindows}. The suggested rectangle is printed to the console and
+     * {@link cascadeOverlapWindows}. The suggested rectangle is printed to the console and
      * returned by this method.
      *
      * The suggestion is based on the current size of the browser window, therefore you should
@@ -872,15 +847,15 @@ Ext.define("BIT.SDS._WindowUtil",
      * @param      {boolean=}            useDefinedSizes  Use defined sizes (Default: `false`).
      *
      * @example
-     * BIT.SDS.WindowUtil.cascadeOverlapAllWindows();
+     * BIT.SDS.WindowUtil.cascadeOverlapWindows();
      *
      * @example
-     * BIT.SDS.WindowUtil.cascadeOverlapAllWindows({x: 160, y: 139, width: 1640, height: 830});
+     * BIT.SDS.WindowUtil.cascadeOverlapWindows({x: 160, y: 139, width: 1640, height: 830});
      *
      * @example
-     * BIT.SDS.WindowUtil.cascadeOverlapAllWindows({x: 160, y: 139, width: 1640, height: 830}, true);
+     * BIT.SDS.WindowUtil.cascadeOverlapWindows({x: 160, y: 139, width: 1640, height: 830}, true);
      */
-    cascadeOverlapAllWindows: function(rectangle, useDefinedSizes) {
+    cascadeOverlapWindows: function(rectangle, useDefinedSizes) {
         var rectangleBottomRightCorner;
         var offsetX;
         var offsetY;
