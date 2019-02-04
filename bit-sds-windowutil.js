@@ -700,7 +700,7 @@ Ext.define("BIT.SDS._WindowUtil",
                 }
 
                 SYNO.SDS.UserSettings.setProperty(appWindowData.appName, restoreSizePosPropertyName, restoreSizePos);
-                this.setWindowSizeAndPosition(appWindowData.appName, restoreSizePos.pageX, restoreSizePos.pageY, restoreSizePos.width, restoreSizePos.height);
+                this.setWindowSizeAndPagePosition(appWindowData.appName, restoreSizePos.pageX, restoreSizePos.pageY, restoreSizePos.width, restoreSizePos.height);
 
                 if (appWindowData.appName === "SYNO.SDS.CMS.Application") {
                     appInstances = SYNO.SDS.AppMgr.getByAppName(appWindowData.appName);
@@ -765,7 +765,7 @@ Ext.define("BIT.SDS._WindowUtil",
     },
 
     /**
-     * Gets the size and position of an application window.
+     * Gets the size and page position of an application window.
      *
      * @param      {Ext.Window}  appWindow  The application window.
      * @return     {Object}      An object with `x`, `y`, `width` and `height` properties.
@@ -774,29 +774,29 @@ Ext.define("BIT.SDS._WindowUtil",
      * var appInstances = SYNO.SDS.AppMgr.getByAppName("SYNO.SDS.App.FileStation3.Instance");
      * if (appInstances.length > 0) {
      *   var appWindow = appInstances[0].window;
-     *   BIT.SDS.WindowUtil.getWindowSizeAndPosition(appWindow);
+     *   BIT.SDS.WindowUtil.getWindowSizeAndPagePosition(appWindow);
      * }
      * // => {x: 310, y: 349, width: 920, height: 560}
      */
-    getWindowSizeAndPosition: function(appWindow) {
-        var windowSizeAndPosition;
+    getWindowSizeAndPagePosition: function(appWindow) {
+        var windowSizeAndPagePosition;
         var pagePosition;
 
         if (!(appWindow instanceof Ext.Window)) return;
 
-        windowSizeAndPosition = appWindow.getSizeAndPosition();
+        windowSizeAndPagePosition = appWindow.getSizeAndPosition();
 
-        if (!("pageX" in windowSizeAndPosition) || !("pageY" in windowSizeAndPosition)) {
-            pagePosition = this.translateElementPointsToPagePosition(appWindow, windowSizeAndPosition.x, windowSizeAndPosition.y);
-            windowSizeAndPosition.pageX = pagePosition.x;
-            windowSizeAndPosition.pageY = pagePosition.y;
+        if (!("pageX" in windowSizeAndPagePosition) || !("pageY" in windowSizeAndPagePosition)) {
+            pagePosition = this.translateElementPointsToPagePosition(appWindow, windowSizeAndPagePosition.x, windowSizeAndPagePosition.y);
+            windowSizeAndPagePosition.pageX = pagePosition.x;
+            windowSizeAndPagePosition.pageY = pagePosition.y;
         }
 
         return {
-            x:      windowSizeAndPosition.pageX,
-            y:      windowSizeAndPosition.pageY,
-            width:  windowSizeAndPosition.width,
-            height: windowSizeAndPosition.height
+            x:      windowSizeAndPagePosition.pageX,
+            y:      windowSizeAndPagePosition.pageY,
+            width:  windowSizeAndPagePosition.width,
+            height: windowSizeAndPagePosition.height
         };
     },
 
@@ -1017,7 +1017,7 @@ Ext.define("BIT.SDS._WindowUtil",
      * **Note**: Open application windows will not change their size. You must manually close and
      * reopen the windows to see the effects of the reset. Before doing so, do not move or resize an
      * open application window, as this will immediately set the restore size and position back to
-     * the current window size.
+     * the current window size and position.
      *
      * @param      {string[]|string|undefined}  appNames  The application name(s).
      *
@@ -1088,8 +1088,9 @@ Ext.define("BIT.SDS._WindowUtil",
     },
 
     /**
-     * Sets the size and position of all open windows of the provided application. If a provided
-     * coordinate or dimension is `undefined`, the respective window property will not be changed.
+     * Sets the size and page position of all open windows of the provided application. If a
+     * provided coordinate or dimension is `undefined`, the respective window property will not be
+     * changed.
      *
      * If an application window is in `maximized` and/or `hidden` state, this method will not change
      * the state. However, after restoring the 'normal' state, the window will have the specified
@@ -1102,14 +1103,14 @@ Ext.define("BIT.SDS._WindowUtil",
      * @param      {number|undefined}  height   The window height.
      *
      * @example
-     * BIT.SDS.WindowUtil.setWindowSizeAndPosition("SYNO.SDS.App.FileStation3.Instance", 10, undefined, undefined, undefined);
+     * BIT.SDS.WindowUtil.setWindowSizeAndPagePosition("SYNO.SDS.App.FileStation3.Instance", 10, undefined, undefined, undefined);
      * // Sets the x-coordinate of all open File Station windows to 10px
      */
-    setWindowSizeAndPosition: function(appName, x, y, width, height) {
+    setWindowSizeAndPagePosition: function(appName, x, y, width, height) {
         var appInstances;
         var appWindow;
         var elementPoints;
-        var currentSizeAndPosition;
+        var currentSizeAndPagePosition;
         var newX;
         var newY;
         var newWidth;
@@ -1120,12 +1121,12 @@ Ext.define("BIT.SDS._WindowUtil",
         if (appInstances.length > 0) {
             Ext.each(appInstances, function(appInstance) {
                 appWindow = appInstance.window;
-                currentSizeAndPosition = this.getWindowSizeAndPosition(appWindow);
+                currentSizeAndPagePosition = this.getWindowSizeAndPagePosition(appWindow);
 
-                newX      = (x      === undefined) ? currentSizeAndPosition.x      : x;
-                newY      = (y      === undefined) ? currentSizeAndPosition.y      : y;
-                newWidth  = (width  === undefined) ? currentSizeAndPosition.width  : width;
-                newHeight = (height === undefined) ? currentSizeAndPosition.height : height;
+                newX      = (x      === undefined) ? currentSizeAndPagePosition.x      : x;
+                newY      = (y      === undefined) ? currentSizeAndPagePosition.y      : y;
+                newWidth  = (width  === undefined) ? currentSizeAndPagePosition.width  : width;
+                newHeight = (height === undefined) ? currentSizeAndPagePosition.height : height;
 
                 if (appWindow.maximized || appWindow.hidden) {
                     elementPoints = this.translatePagePositionToElementPoints(appWindow, newX, newY);
@@ -1235,13 +1236,12 @@ Ext.define("BIT.SDS._WindowUtil",
     },
 
     /**
-     * Translates the left- and top-coordinates of the window relative to its parent to page x- and
-     * y-coordinates. If a provided coordinate is undefined, the corresponding property in the
-     * returned object will also be undefined.
+     * Translates the passed left/top CSS values for the window into page coordinates. If a provided
+     * value is undefined, the corresponding property in the returned object will also be undefined.
      *
      * @param      {Ext.Window}        appWindow  The application window.
-     * @param      {number|undefined}  left       Left-coordinate of the upper left egde.
-     * @param      {number|undefined}  top        Top-coordinate of the upper left egde.
+     * @param      {number|undefined}  left       Left CSS value.
+     * @param      {number|undefined}  top        Top CSS value.
      * @return     {Object}            An object with `x` and `y` properties.
      *
      * @example
@@ -1261,9 +1261,9 @@ Ext.define("BIT.SDS._WindowUtil",
     },
 
     /**
-     * Translates the page x- and y-coordinates to left- and top-coordinates of the window relative
-     * to its parent. If a provided coordinate is undefined, the corresponding property in the
-     * returned object will also be undefined.
+     * Translates the passed page coordinates into left/top CSS values for the window. If a provided
+     * coordinate is undefined, the corresponding property in the returned object will also be
+     * undefined.
      *
      * @param      {Ext.Window}        appWindow  The application window.
      * @param      {number|undefined}  x          X-coordinate of the upper left egde.
