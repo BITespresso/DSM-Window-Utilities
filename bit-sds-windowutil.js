@@ -1125,10 +1125,10 @@ Ext.define("BIT.SDS._WindowUtil",
                 appWindow = appInstance.window;
                 currentSizeAndPagePosition = this.getWindowSizeAndPagePosition(appWindow);
 
-                newX      = (x      === undefined) ? currentSizeAndPagePosition.x      : x;
-                newY      = (y      === undefined) ? currentSizeAndPagePosition.y      : y;
-                newWidth  = (width  === undefined) ? currentSizeAndPagePosition.width  : width;
-                newHeight = (height === undefined) ? currentSizeAndPagePosition.height : height;
+                newX      = Ext.isDefined(x)      ? x      : currentSizeAndPagePosition.x;
+                newY      = Ext.isDefined(y)      ? y      : currentSizeAndPagePosition.y;
+                newWidth  = Ext.isDefined(width)  ? width  : currentSizeAndPagePosition.width;
+                newHeight = Ext.isDefined(height) ? height : currentSizeAndPagePosition.height;
 
                 if (appWindow.maximized || appWindow.hidden) {
                     elementPoints = this.translatePagePositionToElementPoints(appWindow, newX, newY);
