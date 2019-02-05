@@ -627,8 +627,8 @@ Ext.define("BIT.SDS._WindowUtil",
      * in DSM. To ensure that this window has the correct size and position, each time this method
      * is called, the window will be opened and set to the correct size and position.
      *
-     * @param      {BIT.SDS.Rectangle=}  rectangle        The rectangle.
-     * @param      {boolean=}            useDefinedSizes  Use defined sizes (Default: `false`).
+     * @param      {BIT.SDS.Rectangle}  [rectangle]        The rectangle.
+     * @param      {boolean}            [useDefinedSizes]  Use defined sizes (Default: `false`).
      *
      * @example
      * BIT.SDS.WindowUtil.cascadeOverlapWindows();
@@ -851,8 +851,8 @@ Ext.define("BIT.SDS._WindowUtil",
      * If you call this method without providing `appNames`, all application window sizes will be
      * retrieved.
      *
-     * @param      {string[]|string|undefined}  appNames  The application name(s).
-     * @return     {BIT.SDS.Promise}            A new promise.
+     * @param      {string[]|string}  [appNames]  The application name(s).
+     * @return     {BIT.SDS.Promise}  A new promise.
      */
     getWindowSizesPromise: function(appNames) {
         var rejectAfterTimeoutPromise;
@@ -921,8 +921,8 @@ Ext.define("BIT.SDS._WindowUtil",
      * In addition to {@link getWindowSizesPromise}, this method will make several attempts to
      * determine window sizes and is therefore more robust.
      *
-     * @param      {string[]|string|undefined}  appNames  The application name(s).
-     * @return     {BIT.SDS.Promise}            A new promise.
+     * @param      {string[]|string}  [appNames]  The application name(s).
+     * @return     {BIT.SDS.Promise}  A new promise.
      */
     getWindowSizesPromiseWithRetry: function(appNames) {
         if (!appNames) appNames = this.getAppNames();
@@ -937,7 +937,7 @@ Ext.define("BIT.SDS._WindowUtil",
      * If you call this method without providing `appNames`, all application window sizes will be
      * printed.
      *
-     * @param      {string[]|string|undefined}  appNames  The application name(s).
+     * @param      {string[]|string}  [appNames]  The application name(s).
      *
      * @example
      * BIT.SDS.WindowUtil.printWindowSizes();
@@ -978,7 +978,7 @@ Ext.define("BIT.SDS._WindowUtil",
      * resize an open application window, as this will immediately set the restore size and position
      * back to the current window size and position.
      *
-     * @param      {string[]|string|undefined}  appNames  The application name(s).
+     * @param      {string[]|string}  [appNames]  The application name(s).
      *
      * @example
      * BIT.SDS.WindowUtil.resetRestorePositions();
@@ -1021,7 +1021,7 @@ Ext.define("BIT.SDS._WindowUtil",
      * open application window, as this will immediately set the restore size and position back to
      * the current window size and position.
      *
-     * @param      {string[]|string|undefined}  appNames  The application name(s).
+     * @param      {string[]|string}  [appNames]  The application name(s).
      *
      * @example
      * BIT.SDS.WindowUtil.resetRestoreSizes();
@@ -1065,7 +1065,7 @@ Ext.define("BIT.SDS._WindowUtil",
      * resize an open application window, as this will immediately set the restore size and position
      * back to the current window size and position.
      *
-     * @param      {string[]|string|undefined}  appNames  The application name(s).
+     * @param      {string[]|string}  [appNames]  The application name(s).
      *
      * @example
      * BIT.SDS.WindowUtil.resetRestoreSizesAndPositions();
