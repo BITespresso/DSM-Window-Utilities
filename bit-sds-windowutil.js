@@ -487,6 +487,17 @@ Ext.define("BIT.SDS.Util",
          */
         getDsmVersion: function() {
             return _S("majorversion") + "." + _S("minorversion");
+        },
+
+        /**
+         * Returns true if the passed object has the properties of a {@link BIT.SDS.Rectangle} and
+         * these are all of type `number`.
+         *
+         * @param      {Object}   object  The object.
+         * @return     {boolean}  `true` if rectangle, `false` otherwise.
+         */
+        isRectangle: function(object) {
+            return Ext.isObject(object) && Ext.isNumber(object.x) && Ext.isNumber(object.y) && Ext.isNumber(object.width) && Ext.isNumber(object.height);
         }
     }
 });
@@ -646,7 +657,7 @@ Ext.define("BIT.SDS._WindowUtil",
 
         var dsmVersion = BIT.SDS.Util.getDsmVersion();
 
-        if (!Ext.isObject(rectangle)) {
+        if (!BIT.SDS.Util.isRectangle(rectangle)) {
             rectangle = this.suggestRectangle();
         }
 
