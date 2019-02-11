@@ -670,11 +670,13 @@ Ext.define("BIT.SDS._WindowUtil",
         };
 
         Ext.each(this.appWindowDataList, function(appWindowData) {
-            var restoreSizePosPropertyName = this.getRestoreSizePosPropertyName(appWindowData.appName);
-            var restoreSizePos;
             var windowBottomRightCorner;
             var appInstances;
             var installedAppNames;
+            var newX;
+            var newY;
+            var newWidth;
+            var newHeight;
 
             windowBottomRightCorner = {
                 x: offsetX + appWindowData.maxInitialWindowWidth,
@@ -699,19 +701,13 @@ Ext.define("BIT.SDS._WindowUtil",
             }
 
             if (appWindowData.dsmVersions.indexOf(dsmVersion) !== -1) {
-                restoreSizePos = {
-                    fromRestore: true,
-                    pageX: offsetX,
-                    pageY: offsetY
-                };
+                newX = offsetX;
+                newY = offsetY;
 
-                if (useDefinedSizes) {
-                    restoreSizePos.width  = appWindowData.maxInitialWindowWidth;
-                    restoreSizePos.height = appWindowData.maxInitialWindowHeight;
-                }
+                newWidth  = useDefinedSizes ? appWindowData.maxInitialWindowWidth  : null;
+                newHeight = useDefinedSizes ? appWindowData.maxInitialWindowHeight : null;
 
-                SYNO.SDS.UserSettings.setProperty(appWindowData.appName, restoreSizePosPropertyName, restoreSizePos);
-                this.setWindowSizeAndPagePosition(appWindowData.appName, restoreSizePos.pageX, restoreSizePos.pageY, restoreSizePos.width, restoreSizePos.height);
+                this.setWindowSizeAndPagePosition(appWindowData.appName, newX, newY, newWidth, newHeight);
 
                 if (appWindowData.appName === "SYNO.SDS.CMS.Application") {
                     appInstances = SYNO.SDS.AppMgr.getByAppName(appWindowData.appName);
@@ -719,9 +715,7 @@ Ext.define("BIT.SDS._WindowUtil",
 
                     if ((appInstances.length === 0) && (installedAppNames.indexOf(appWindowData.appName) !== -1)) {
                         SYNO.SDS.AppLaunch(appWindowData.appName, {}, false, function(appInstance) {
-                            if (Ext.isObject(appInstance)) {
-                                appInstance.window.setPagePosition(restoreSizePos.pageX, restoreSizePos.pageY);
-                            }
+                            this.setWindowSizeAndPagePosition(appWindowData.appName, newX, newY, newWidth, newHeight);
                         }, this);
                     }
                 }
@@ -992,29 +986,19 @@ Ext.define("BIT.SDS._WindowUtil",
      * @param      {string[]|string}  [appNames]  The application name(s).
      *
      * @example
-     * BIT.SDS.WindowUtil.resetRestorePositions();
+     * BIT.SDS.WindowUtil.resetWindowPositions();
      *
      * @example
-     * BIT.SDS.WindowUtil.resetRestorePositions("SYNO.SDS.PkgManApp.Instance");
+     * BIT.SDS.WindowUtil.resetWindowPositions("SYNO.SDS.PkgManApp.Instance");
      *
      * @example
-     * BIT.SDS.WindowUtil.resetRestorePositions(["SYNO.SDS.HA.Instance", ...]);
+     * BIT.SDS.WindowUtil.resetWindowPositions(["SYNO.SDS.HA.Instance", ...]);
      */
-    resetRestorePositions: function(appNames) {
+    resetWindowPositions: function(appNames) {
         if (!appNames) appNames = this.getAppNames();
 
         Ext.each(appNames, function(appName) {
-            var restoreSizePosPropertyName = this.getRestoreSizePosPropertyName(appName);
-            var restoreSizePos = SYNO.SDS.UserSettings.getProperty(appName, restoreSizePosPropertyName);
-
-            if (restoreSizePos) {
-                delete restoreSizePos.fromRestore;
-                delete restoreSizePos.pageX;
-                delete restoreSizePos.pageY;
-                delete restoreSizePos.x;
-                delete restoreSizePos.y;
-                SYNO.SDS.UserSettings.setProperty(appName, restoreSizePosPropertyName, restoreSizePos);
-            }
+            this.setWindowSizeAndPagePosition(appName, null, null, undefined, undefined);
         }, this);
     },
 
@@ -1035,26 +1019,19 @@ Ext.define("BIT.SDS._WindowUtil",
      * @param      {string[]|string}  [appNames]  The application name(s).
      *
      * @example
-     * BIT.SDS.WindowUtil.resetRestoreSizes();
+     * BIT.SDS.WindowUtil.resetWindowSizes();
      *
      * @example
-     * BIT.SDS.WindowUtil.resetRestoreSizes("SYNO.SDS.PkgManApp.Instance");
+     * BIT.SDS.WindowUtil.resetWindowSizes("SYNO.SDS.PkgManApp.Instance");
      *
      * @example
-     * BIT.SDS.WindowUtil.resetRestoreSizes(["SYNO.SDS.HA.Instance", ...]);
+     * BIT.SDS.WindowUtil.resetWindowSizes(["SYNO.SDS.HA.Instance", ...]);
      */
-    resetRestoreSizes: function(appNames) {
+    resetWindowSizes: function(appNames) {
         if (!appNames) appNames = this.getAppNames();
 
         Ext.each(appNames, function(appName) {
-            var restoreSizePosPropertyName = this.getRestoreSizePosPropertyName(appName);
-            var restoreSizePos = SYNO.SDS.UserSettings.getProperty(appName, restoreSizePosPropertyName);
-
-            if (restoreSizePos) {
-                delete restoreSizePos.width;
-                delete restoreSizePos.height;
-                SYNO.SDS.UserSettings.setProperty(appName, restoreSizePosPropertyName, restoreSizePos);
-            }
+            this.setWindowSizeAndPagePosition(appName, undefined, undefined, null, null);
         }, this);
     },
 
@@ -1079,24 +1056,19 @@ Ext.define("BIT.SDS._WindowUtil",
      * @param      {string[]|string}  [appNames]  The application name(s).
      *
      * @example
-     * BIT.SDS.WindowUtil.resetRestoreSizesAndPositions();
+     * BIT.SDS.WindowUtil.resetWindowSizesAndPositions();
      *
      * @example
-     * BIT.SDS.WindowUtil.resetRestoreSizesAndPositions("SYNO.SDS.PkgManApp.Instance");
+     * BIT.SDS.WindowUtil.resetWindowSizesAndPositions("SYNO.SDS.PkgManApp.Instance");
      *
      * @example
-     * BIT.SDS.WindowUtil.resetRestoreSizesAndPositions(["SYNO.SDS.HA.Instance", ...]);
+     * BIT.SDS.WindowUtil.resetWindowSizesAndPositions(["SYNO.SDS.HA.Instance", ...]);
      */
-    resetRestoreSizesAndPositions: function(appNames) {
+    resetWindowSizesAndPositions: function(appNames) {
         if (!appNames) appNames = this.getAppNames();
 
         Ext.each(appNames, function(appName) {
-            var restoreSizePosPropertyName = this.getRestoreSizePosPropertyName(appName);
-            var restoreSizePos = SYNO.SDS.UserSettings.getProperty(appName, restoreSizePosPropertyName);
-
-            if (restoreSizePos) {
-                SYNO.SDS.UserSettings.removeProperty(appName, restoreSizePosPropertyName);
-            }
+            this.setWindowSizeAndPagePosition(appName, null, null, null, null);
         }, this);
     },
 
