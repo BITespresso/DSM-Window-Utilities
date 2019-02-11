@@ -1101,45 +1101,101 @@ Ext.define("BIT.SDS._WindowUtil",
     },
 
     /**
-     * Sets the size and page position of all open windows of the provided application. If a
-     * provided coordinate or dimension is `undefined`, the respective window property will not be
-     * changed.
+     * Sets the size and page position of the windows of the provided application. Currently open
+     * windows will be resized and moved to the new position. In addition, the window restore size
+     * and position of the provided application is set so that newly opened windows will have the
+     * specified size and position.
      *
-     * If an application window is in `maximized` and/or `hidden` state, this method will not change
-     * the state. However, after restoring the 'normal' state, the window will have the specified
-     * coordinates and dimensions.
+     * If an open application window is in `maximized` and/or `hidden` state, this method will not
+     * change the state. However, after restoring the 'normal' state, the window will have the
+     * specified coordinates and dimensions.
      *
-     * @param      {string}            appName  The application name.
-     * @param      {number|undefined}  x        X-coordinate of the upper left egde.
-     * @param      {number|undefined}  y        Y-coordinate of the upper left egde.
-     * @param      {number|undefined}  width    The window width.
-     * @param      {number|undefined}  height   The window height.
+     * If a coordinate or dimension *is not* to be set to a certain value, but is to retain its
+     * current value, the corresponding parameter must be `undefined`. This can be used to simply
+     * move or resize a window without changing its size or position.
+     *
+     * If a coordinate or dimension should be reset to the default values after the first DSM
+     * installation, the corresponding parameter must be `null`.
+     *
+     * **Note 1**: The default values that are used after a reset via a `null` parameter are
+     * internal to DSM and therefore unknown. For this reason, the currently open application
+     * windows cannot be resized or moved to this position. As a consequnce you must manually close
+     * and reopen the windows to see the effects of the reset. Before doing so, do not move or
+     * resize an open application window, as this will immediately set the restore size and position
+     * back to the current window size and position.
+     *
+     * **Note 2**: The x- and y-coordinates of a window cannot be reset independently via a `null`
+     * parameter. If either the x- or y-coordinate parameter is `null`, the method will treat it as
+     * `null` for both the x- and y-coordinate.
+     *
+     * **Note 3**: If the specified width or height of the window is smaller than the DSM internally
+     * defined *minimum* width or height of the window and no window of the application is currently
+     * open, then the width and height are set to the *default* width or height (instead of the
+     * *minimum* width or height). This is due to an error in the DSM and cannot be changed.
+     *
+     * @param      {string}                 appName  The application name.
+     * @param      {number|undefined|null}  x        X-coordinate of the upper left egde.
+     * @param      {number|undefined|null}  y        Y-coordinate of the upper left egde.
+     * @param      {number|undefined|null}  width    The window width.
+     * @param      {number|undefined|null}  height   The window height.
+     *
+     * @example
+     * BIT.SDS.WindowUtil.setWindowSizeAndPagePosition("SYNO.SDS.App.FileStation3.Instance", 10, 49, 1600, 900);
+     * // Sets the x- and y-coordinate of all open File Station windows to (10px, 49px) and the size to 1600px x 900px
      *
      * @example
      * BIT.SDS.WindowUtil.setWindowSizeAndPagePosition("SYNO.SDS.App.FileStation3.Instance", 10, undefined, undefined, undefined);
      * // Sets the x-coordinate of all open File Station windows to 10px
+     *
+     * @example
+     * BIT.SDS.WindowUtil.setWindowSizeAndPagePosition("SYNO.SDS.App.FileStation3.Instance", null, null, null, null);
+     * // Resets the window restore size and position for File Station windows
      */
     setWindowSizeAndPagePosition: function(appName, x, y, width, height) {
         var appInstances;
         var appWindow;
-        var elementPoints;
-        var currentSizeAndPagePosition;
+        var windowSizeAndPagePosition;
         var newX;
         var newY;
         var newWidth;
         var newHeight;
+        var elementPoints;
+        var restoreSizePos;
+
+        var minWidth  = 0;
+        var minHeight = 0;
+
+        var deletedX      = false;
+        var deletedY      = false;
+        var deletedWidth  = false;
+        var deletedHeight = false;
+        var assigned      = false;
+
+        var restoreSizePosPropertyName = this.getRestoreSizePosPropertyName(appName);
 
         appInstances = SYNO.SDS.AppMgr.getByAppName(appName);
 
         if (appInstances.length > 0) {
             Ext.each(appInstances, function(appInstance) {
                 appWindow = appInstance.window;
-                currentSizeAndPagePosition = this.getWindowSizeAndPagePosition(appWindow);
+                windowSizeAndPagePosition = this.getWindowSizeAndPagePosition(appWindow);
 
-                newX      = Ext.isDefined(x)      ? x      : currentSizeAndPagePosition.x;
-                newY      = Ext.isDefined(y)      ? y      : currentSizeAndPagePosition.y;
-                newWidth  = Ext.isDefined(width)  ? width  : currentSizeAndPagePosition.width;
-                newHeight = Ext.isDefined(height) ? height : currentSizeAndPagePosition.height;
+                if ((x === null) || (y === null)) {
+                    newX = windowSizeAndPagePosition.x;
+                    newY = windowSizeAndPagePosition.y;
+                } else {
+                    newX = Ext.isNumber(x) ? x : windowSizeAndPagePosition.x;
+                    newY = Ext.isNumber(y) ? y : windowSizeAndPagePosition.y;
+                }
+
+                newWidth  = Ext.isNumber(width)  ? width  : windowSizeAndPagePosition.width;
+                newHeight = Ext.isNumber(height) ? height : windowSizeAndPagePosition.height;
+
+                minWidth  = Ext.isDefined(appWindow.minWidth)  ? appWindow.minWidth  : minWidth;
+                minHeight = Ext.isDefined(appWindow.minHeight) ? appWindow.minHeight : minHeight;
+
+                newWidth  = (newWidth  < minWidth)  ? minWidth  : newWidth;
+                newHeight = (newHeight < minHeight) ? minHeight : newHeight;
 
                 if (appWindow.maximized || appWindow.hidden) {
                     elementPoints = this.translatePagePositionToElementPoints(appWindow, newX, newY);
@@ -1167,9 +1223,57 @@ Ext.define("BIT.SDS._WindowUtil",
                     appWindow.setPagePosition(newX, newY);
                     appWindow.setSize(newWidth, newHeight);
                 }
-
-                appWindow.saveRestoreData();
             }, this);
+        }
+
+        restoreSizePos = SYNO.SDS.UserSettings.getProperty(appName, restoreSizePosPropertyName);
+        restoreSizePos = restoreSizePos ? restoreSizePos : {};
+        restoreSizePos.fromRestore = true;
+
+        if ((x === null) || (y === null)) {
+            delete restoreSizePos.fromRestore;
+
+            delete restoreSizePos.pageX;
+            delete restoreSizePos.x;
+            deletedX = true;
+
+            delete restoreSizePos.pageY;
+            delete restoreSizePos.y;
+            deletedY = true;
+        } else {
+            if (Ext.isNumber(x)) {
+                restoreSizePos.pageX = x;
+                delete restoreSizePos.x;
+                assigned = true;
+            }
+
+            if (Ext.isNumber(y)) {
+                restoreSizePos.pageY = y;
+                delete restoreSizePos.y;
+                assigned = true;
+            }
+        }
+
+        if (width === null) {
+            delete restoreSizePos.width;
+            deletedWidth = true;
+        } else if (Ext.isNumber(width)) {
+            restoreSizePos.width = (width < minWidth) ? minWidth : width;
+            assigned = true;
+        }
+
+        if (height === null) {
+            delete restoreSizePos.height;
+            deletedHeight = true;
+        } else if (Ext.isNumber(height)) {
+            restoreSizePos.height = (height < minHeight) ? minHeight : height;
+            assigned = true;
+        }
+
+        if (deletedX && deletedY && deletedWidth && deletedHeight) {
+            SYNO.SDS.UserSettings.removeProperty(appName, restoreSizePosPropertyName);
+        } else if (assigned || deletedX || deletedY || deletedWidth || deletedHeight) {
+            SYNO.SDS.UserSettings.setProperty(appName, restoreSizePosPropertyName, restoreSizePos);
         }
     },
 
