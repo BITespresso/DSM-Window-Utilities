@@ -654,7 +654,7 @@ Ext.define("BIT.SDS._WindowUtil",
         var dsmVersion = BIT.SDS.Util.getDsmVersion();
 
         if (!BIT.SDS.Util.isRectangle(windowArea)) {
-            windowArea = this.suggestWindowArea();
+            windowArea = BIT.SDS.WindowUtil.suggestWindowArea();
         }
 
         offsetX = windowArea.x;
@@ -703,7 +703,7 @@ Ext.define("BIT.SDS._WindowUtil",
                 newWidth  = useDefinedSize ? appWindowData.maxInitialWindowWidth  : null;
                 newHeight = useDefinedSize ? appWindowData.maxInitialWindowHeight : null;
 
-                this.setSizeAndPosition(appWindowData.appName, newX, newY, newWidth, newHeight);
+                BIT.SDS.WindowUtil.setSizeAndPosition(appWindowData.appName, newX, newY, newWidth, newHeight);
 
                 if (appWindowData.appName === "SYNO.SDS.CMS.Application") {
                     appInstances = SYNO.SDS.AppMgr.getByAppName(appWindowData.appName);
@@ -711,7 +711,7 @@ Ext.define("BIT.SDS._WindowUtil",
 
                     if ((appInstances.length === 0) && (installedAppNames.indexOf(appWindowData.appName) !== -1)) {
                         SYNO.SDS.AppLaunch(appWindowData.appName, {}, false, function(appInstance) {
-                            this.setSizeAndPosition(appWindowData.appName, newX, newY, newWidth, newHeight);
+                            BIT.SDS.WindowUtil.setSizeAndPosition(appWindowData.appName, newX, newY, newWidth, newHeight);
                         }, this);
                     }
                 }
@@ -788,7 +788,7 @@ Ext.define("BIT.SDS._WindowUtil",
         sizeAndPosition = appWindow.getSizeAndPosition();
 
         if (!("pageX" in sizeAndPosition) || !("pageY" in sizeAndPosition)) {
-            pagePosition = this.translateElementPointsToPagePosition(appWindow, sizeAndPosition.x, sizeAndPosition.y);
+            pagePosition = BIT.SDS.WindowUtil.translateElementPointsToPagePosition(appWindow, sizeAndPosition.x, sizeAndPosition.y);
             sizeAndPosition.pageX = pagePosition.x;
             sizeAndPosition.pageY = pagePosition.y;
         }
@@ -861,10 +861,10 @@ Ext.define("BIT.SDS._WindowUtil",
         var launchDelay = 0;
         var launchDelayIncrement = 0;
 
-        if (!appNames) appNames = this.getAppNames();
+        if (!appNames) appNames = BIT.SDS.WindowUtil.getAppNames();
 
         Ext.each(appNames, function(appName) {
-            var restoreSizePosPropertyName = this.getRestoreSizePosPropertyName(appName);
+            var restoreSizePosPropertyName = BIT.SDS.WindowUtil.getRestoreSizePosPropertyName(appName);
             var restoreSizePos = SYNO.SDS.UserSettings.getProperty(appName, restoreSizePosPropertyName);
             var appInstances;
             var installedAppNames;
@@ -890,7 +890,7 @@ Ext.define("BIT.SDS._WindowUtil",
 
             if (installedAppNames.indexOf(appName) !== -1) {
                 launchDelay += launchDelayIncrement;
-                promises.push(this.getSizeByLaunchingApp(appName, launchDelay));
+                promises.push(BIT.SDS.WindowUtil.getSizeByLaunchingApp(appName, launchDelay));
                 launchDelayIncrement = 1000;
                 return;
             }
@@ -926,7 +926,7 @@ Ext.define("BIT.SDS._WindowUtil",
      * @return     {BIT.SDS.Promise}  A new promise.
      */
     getSizeWithRetry: function(appNames) {
-        if (!appNames) appNames = this.getAppNames();
+        if (!appNames) appNames = BIT.SDS.WindowUtil.getAppNames();
 
         return BIT.SDS.Promise.retry(BIT.SDS.WindowUtil.getSize.createDelegate(this, [appNames]), 5, 5000);
     },
@@ -951,7 +951,7 @@ Ext.define("BIT.SDS._WindowUtil",
      * // SYNO.SDS.App.FileStation3.Instance;920;560
      */
     logSize: function(appNames) {
-        if (!appNames) appNames = this.getAppNames();
+        if (!appNames) appNames = BIT.SDS.WindowUtil.getAppNames();
 
         BIT.SDS.WindowUtil.getSizeWithRetry(appNames)
             .then(function(results) {
@@ -994,10 +994,10 @@ Ext.define("BIT.SDS._WindowUtil",
      * BIT.SDS.WindowUtil.resetSizeAndPosition(["SYNO.SDS.HA.Instance", ...]);
      */
     resetSizeAndPosition: function(appNames) {
-        if (!appNames) appNames = this.getAppNames();
+        if (!appNames) appNames = BIT.SDS.WindowUtil.getAppNames();
 
         Ext.each(appNames, function(appName) {
-            this.setSizeAndPosition(appName, null, null, null, null);
+            BIT.SDS.WindowUtil.setSizeAndPosition(appName, null, null, null, null);
         }, this);
     },
 
@@ -1072,14 +1072,14 @@ Ext.define("BIT.SDS._WindowUtil",
         var deletedHeight = false;
         var assigned      = false;
 
-        var restoreSizePosPropertyName = this.getRestoreSizePosPropertyName(appName);
+        var restoreSizePosPropertyName = BIT.SDS.WindowUtil.getRestoreSizePosPropertyName(appName);
 
         appInstances = SYNO.SDS.AppMgr.getByAppName(appName);
 
         if (appInstances.length > 0) {
             Ext.each(appInstances, function(appInstance) {
                 appWindow = appInstance.window;
-                sizeAndPosition = this.getSizeAndPosition(appWindow);
+                sizeAndPosition = BIT.SDS.WindowUtil.getSizeAndPosition(appWindow);
 
                 if ((x === null) || (y === null)) {
                     newX = sizeAndPosition.x;
@@ -1099,7 +1099,7 @@ Ext.define("BIT.SDS._WindowUtil",
                 newHeight = (newHeight < minHeight) ? minHeight : newHeight;
 
                 if (appWindow.maximized || appWindow.hidden) {
-                    elementPoints = this.translatePagePositionToElementPoints(appWindow, newX, newY);
+                    elementPoints = BIT.SDS.WindowUtil.translatePagePositionToElementPoints(appWindow, newX, newY);
 
                     if (appWindow.draggable && appWindow.restorePos) {
                         appWindow.restorePos[0] = elementPoints.left;
