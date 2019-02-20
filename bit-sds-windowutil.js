@@ -1247,6 +1247,9 @@ Ext.define("BIT.SDS._WindowUtil",
             }, this);
         }
 
+        width  = (width  >= minWidth)  ? width  : minWidth;
+        height = (height >= minHeight) ? height : minHeight;
+
         restoreSizePos = {
             fromRestore: true,
             pageX:  x,
