@@ -829,11 +829,10 @@ Ext.define("BIT.SDS._WindowUtil",
      * @return     {BIT.SDS.Promise}  A new promise.
      */
     getSizeByLaunchingApp: function(appName, launchDelay) {
-        var appInstances;
-
         return new BIT.SDS.Promise(function(resolve, reject) {
             SYNO.SDS.AppLaunch.defer(launchDelay, this, [appName, {}, false, function(appInstance) {
                 var windowSize;
+                var appInstances;
 
                 if (Ext.isObject(appInstance)) {
                     windowSize = new BIT.SDS.AppWinSize(appName, appInstance.window.getWidth(), appInstance.window.getHeight());
