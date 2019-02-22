@@ -1085,6 +1085,37 @@ Ext.define("BIT.SDS._WindowUtil",
     },
 
     /**
+     * Sets the restore page XY position of the provided application.
+     *
+     * **Note**: Currently open application windows will not change their position. You must close
+     * and reopen the windows to see the result. Do not move or resize the application window
+     * beforehand, as this immediately sets the restore position to the current window position.
+     *
+     * @param      {string}  appName  The application name.
+     * @param      {number}  x        The page x position.
+     * @param      {number}  y        The page y position.
+     *
+     * @example
+     * BIT.SDS.WindowUtil.setRestorePagePosition("SYNO.SDS.App.FileStation3.Instance", 10, 49);
+     * // Sets the restore page XY position for File Station windows to (10px, 49px)
+     */
+    setRestorePagePosition: function(appName, x, y) {
+        var restoreSizePosPropertyName = BIT.SDS.WindowUtil.getRestoreSizePosPropertyName(appName);
+        var restoreSizePos = SYNO.SDS.UserSettings.getProperty(appName, restoreSizePosPropertyName) || {};
+
+        delete restoreSizePos.x;
+        delete restoreSizePos.y;
+
+        Ext.apply(restoreSizePos, {
+            pageX:       x,
+            pageY:       y,
+            fromRestore: true
+        });
+
+        SYNO.SDS.UserSettings.setProperty(appName, restoreSizePosPropertyName, restoreSizePos);
+    },
+
+    /**
      * Calculates a suggestion for the window area which can be used as input for
      * {@link cascadeOverlap}. The suggested window area is printed to the console and
      * returned by this method.
