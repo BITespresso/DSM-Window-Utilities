@@ -965,30 +965,30 @@ Ext.define("BIT.SDS._WindowUtil",
     },
 
     /**
-     * Resets the window size and position of the provided application(s) to their original values.
+     * Resets the restore size and XY position of the provided application(s).
      *
      * If you call this method without providing `appNames`, all application windows will be reset.
      *
      * **Note**: Currently open application windows will not change their size and position. You
-     * must manually close and reopen the windows to see the effects of the reset. Before doing
-     * this, you must not move or resize the application window, as this immediately sets the size
-     * and position to the current window size and position.
+     * must close and reopen the windows to see the result. Do not move or resize the application
+     * window beforehand, as this immediately sets the restore size and position to the current
+     * window size and position.
      *
      * @param      {string[]|string}  [appNames]  The application name(s).
      *
      * @example
-     * BIT.SDS.WindowUtil.resetSizeAndPosition();
+     * BIT.SDS.WindowUtil.resetRestoreSizeAndPosition();
      * // Resets the window size and position for all applications
      *
      * @example
-     * BIT.SDS.WindowUtil.resetSizeAndPosition("SYNO.SDS.PkgManApp.Instance");
+     * BIT.SDS.WindowUtil.resetRestoreSizeAndPosition("SYNO.SDS.PkgManApp.Instance");
      * // Resets the window size and position for Package Center
      *
      * @example
-     * BIT.SDS.WindowUtil.resetSizeAndPosition(["SYNO.SDS.PkgManApp.Instance", "SYNO.SDS.HA.Instance"]);
+     * BIT.SDS.WindowUtil.resetRestoreSizeAndPosition(["SYNO.SDS.PkgManApp.Instance", "SYNO.SDS.HA.Instance"]);
      * // Resets the window size and position for Package Center and High Availability Manager
      */
-    resetSizeAndPosition: function(appNames) {
+    resetRestoreSizeAndPosition: function(appNames) {
         if (!appNames) appNames = BIT.SDS.WindowUtil.getAppNames();
 
         Ext.each(appNames, function(appName) {
