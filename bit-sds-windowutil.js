@@ -490,6 +490,16 @@ Ext.define("BIT.SDS.Util",
         },
 
         /**
+         * Returns true if the provided application is installed.
+         *
+         * @param      {string}   appName  The application name.
+         * @return     {boolean}  `true` if installed, `false` otherwise.
+         */
+        isInstalled: function(appName) {
+            return (SYNO.SDS.AppUtil.getApps().indexOf(appName) !== -1);
+        },
+
+        /**
          * Returns true if the passed object has the properties of a {@link BIT.SDS.Rectangle} and
          * these are all of type `number`.
          *
@@ -659,7 +669,6 @@ Ext.define("BIT.SDS._WindowUtil",
         Ext.each(this.appWindowDataList, function(appWindowData) {
             var windowBottomRightCorner;
             var appInstances;
-            var installedAppNames;
 
             windowBottomRightCorner = {
                 x: offsetX + appWindowData.maxInitialWindowWidth,
@@ -706,9 +715,8 @@ Ext.define("BIT.SDS._WindowUtil",
 
                 if (appWindowData.appName === "SYNO.SDS.CMS.Application") {
                     appInstances = SYNO.SDS.AppMgr.getByAppName(appWindowData.appName);
-                    installedAppNames = SYNO.SDS.AppUtil.getApps();
 
-                    if ((appInstances.length === 0) && (installedAppNames.indexOf(appWindowData.appName) !== -1)) {
+                    if ((appInstances.length === 0) && BIT.SDS.Util.isInstalled(appWindowData.appName)) {
                         SYNO.SDS.AppLaunch(appWindowData.appName, {}, false, (function() {
                             var x = offsetX;
                             var y = offsetY;
@@ -873,7 +881,6 @@ Ext.define("BIT.SDS._WindowUtil",
             var restoreSizePosPropertyName = BIT.SDS.WindowUtil.getRestoreSizePosPropertyName(appName);
             var restoreSizePos = SYNO.SDS.UserSettings.getProperty(appName, restoreSizePosPropertyName);
             var appInstances;
-            var installedAppNames;
             var windowSize;
 
             if (restoreSizePos) {
@@ -892,9 +899,7 @@ Ext.define("BIT.SDS._WindowUtil",
                 return;
             }
 
-            installedAppNames = SYNO.SDS.AppUtil.getApps();
-
-            if (installedAppNames.indexOf(appName) !== -1) {
+            if (BIT.SDS.Util.isInstalled(appName)) {
                 launchDelay += launchDelayIncrement;
                 promises.push(BIT.SDS.WindowUtil.getSizeByLaunchingApp(appName, launchDelay));
                 launchDelayIncrement = 1000;
