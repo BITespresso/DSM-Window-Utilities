@@ -614,39 +614,30 @@ Ext.define("BIT.SDS._WindowUtil",
     },
 
     /**
-     * Sets all application windows to positions determined by the specified window area and to
-     * their default or predefined sizes. The algorithm used ensures that each window has a position
-     * that depends entirely on the specified window area, regardless of which applications are
-     * installed or which DSM version is used.
+     * Sets the restore XY position of all applications to cascaded, overlapping positions
+     * determined by the specified window area and resets the restore size. The algorithm used
+     * ensures that each window has a position that depends entirely on the specified window area,
+     * regardless of which applications are installed or which DSM version is used.
      *
-     * If the option `useDefinedSize` is set to `true`, the windows will be set to the sizes defined
-     * internally in this script. This results in a particular application window having the same
-     * size for all DSM versions regardless of its individual default size.
-     *
-     * **Note 1**: Open application windows are moved to the desired position, but unless the
-     * `useDefinedSize` option is 'true', their size will not be changed immediately. In this case,
-     * you must manually close and reopen the windows to see the effects of resetting the window
-     * size. Before doing so, do not move or resize an open application window, as this will
-     * immediately set the restore size back to the current window size.
+     * **Note 1**: Currently open application windows will not change their size and position. You
+     * must close and reopen the windows to see the result. Do not move or resize the application
+     * window beforehand, as this immediately sets the restore size and position to the current
+     * window size and position.
      *
      * **Note 2**: The Synology CMS (Central Management System) application
-     * (`SYNO.SDS.CMS.Application`) does not read the stored window size and position due to a bug
-     * in DSM. To ensure that this window has the correct size and position, each time this method
-     * is called, the window will be opened and set to the correct size and position.
+     * (`SYNO.SDS.CMS.Application`) does not read the restore size and position due to a bug in DSM.
+     * To ensure that this window has the correct size and position, each time this method is
+     * called, the window will be opened and set to the correct size and position.
      *
-     * @param      {BIT.SDS.Rectangle}  [windowArea]      The window area.
-     * @param      {boolean}            [useDefinedSize]  Use defined size (Default: `false`).
+     * @param      {BIT.SDS.Rectangle}  [windowArea]  The window area.
      *
      * @example
      * BIT.SDS.WindowUtil.cascadeOverlap();
      *
      * @example
      * BIT.SDS.WindowUtil.cascadeOverlap({x: 160, y: 139, width: 1640, height: 830});
-     *
-     * @example
-     * BIT.SDS.WindowUtil.cascadeOverlap({x: 160, y: 139, width: 1640, height: 830}, true);
      */
-    cascadeOverlap: function(windowArea, useDefinedSize) {
+    cascadeOverlap: function(windowArea) {
         var windowAreaBottomRightCorner;
         var offsetX;
         var offsetY;
@@ -669,10 +660,6 @@ Ext.define("BIT.SDS._WindowUtil",
             var windowBottomRightCorner;
             var appInstances;
             var installedAppNames;
-            var newX;
-            var newY;
-            var newWidth;
-            var newHeight;
 
             windowBottomRightCorner = {
                 x: offsetX + appWindowData.maxInitialWindowWidth,
@@ -696,23 +683,42 @@ Ext.define("BIT.SDS._WindowUtil",
                 }
             }
 
+            if (windowBottomRightCorner.x > windowAreaBottomRightCorner.x && windowBottomRightCorner.y > windowAreaBottomRightCorner.y) {
+                offsetX = windowArea.x;
+                offsetY = windowArea.y;
+            } else {
+                if (windowBottomRightCorner.x > windowAreaBottomRightCorner.x) {
+                    if (offsetX === windowArea.x) {
+                        offsetY = windowArea.y;
+                    }
+                    offsetX = windowArea.x;
+                } else {
+                    if (windowBottomRightCorner.y > windowAreaBottomRightCorner.y) {
+                        // offsetX += 30;
+                        offsetY = windowArea.y;
+                    }
+                }
+            }
+
             if (appWindowData.dsmVersions.indexOf(dsmVersion) !== -1) {
-                newX = offsetX;
-                newY = offsetY;
-
-                newWidth  = useDefinedSize ? appWindowData.maxInitialWindowWidth  : null;
-                newHeight = useDefinedSize ? appWindowData.maxInitialWindowHeight : null;
-
-                BIT.SDS.WindowUtil.setSizeAndPosition(appWindowData.appName, newX, newY, newWidth, newHeight);
+                BIT.SDS.WindowUtil.resetRestoreSizeAndPosition(appWindowData.appName);
+                BIT.SDS.WindowUtil.setRestorePagePosition(appWindowData.appName, offsetX, offsetY);
 
                 if (appWindowData.appName === "SYNO.SDS.CMS.Application") {
                     appInstances = SYNO.SDS.AppMgr.getByAppName(appWindowData.appName);
                     installedAppNames = SYNO.SDS.AppUtil.getApps();
 
                     if ((appInstances.length === 0) && (installedAppNames.indexOf(appWindowData.appName) !== -1)) {
-                        SYNO.SDS.AppLaunch(appWindowData.appName, {}, false, function(appInstance) {
-                            BIT.SDS.WindowUtil.setSizeAndPosition(appWindowData.appName, newX, newY, newWidth, newHeight);
-                        }, this);
+                        SYNO.SDS.AppLaunch(appWindowData.appName, {}, false, (function() {
+                            var x = offsetX;
+                            var y = offsetY;
+
+                            return function(appInstance) {
+                                if (Ext.isObject(appInstance)) {
+                                    appInstance.window.setPagePosition(x, y);
+                                }
+                            };
+                        })(), this);
                     }
                 }
             }
