@@ -734,16 +734,16 @@ Ext.define("BIT.SDS.WindowUtil",
         },
 
         /**
-         * Returns a list of all applications available for the DSM version installed on the
-         * DiskStation, which open a window on the DSM desktop.
+         * Returns an array of all applications that can open a window on the DSM desktop and are
+         * available for the DSM version currently installed on DiskStation.
          *
-         * @return     {string[]}  The list of application names.
+         * @return     {string[]}  An array of application names.
          *
          * @example
-         * BIT.SDS.WindowUtil.getAppNames();
+         * BIT.SDS.WindowUtil.getAppNamesForDsmVersion();
          * // => ["SYNO.SDS.AdminCenter.Application", ...]
          */
-        getAppNames: function() {
+        getAppNamesForDsmVersion: function() {
             var appNames = [];
             var dsmVersion = BIT.SDS.Util.getDsmVersion();
 
@@ -871,7 +871,7 @@ Ext.define("BIT.SDS.WindowUtil",
             var launchDelay = 0;
             var launchDelayIncrement = 0;
 
-            if (!appNames) appNames = BIT.SDS.WindowUtil.getAppNames();
+            if (!appNames) appNames = BIT.SDS.WindowUtil.getAppNamesForDsmVersion();
 
             Ext.each(appNames, function(appName) {
                 var restoreSizePosPropertyName = BIT.SDS.WindowUtil.getRestoreSizePosPropertyName(appName);
@@ -933,7 +933,7 @@ Ext.define("BIT.SDS.WindowUtil",
          * @return     {BIT.SDS.Promise}  A new promise.
          */
         getSizeWithRetry: function(appNames) {
-            if (!appNames) appNames = BIT.SDS.WindowUtil.getAppNames();
+            if (!appNames) appNames = BIT.SDS.WindowUtil.getAppNamesForDsmVersion();
 
             return BIT.SDS.Promise.retry(BIT.SDS.WindowUtil.getSize.createDelegate(this, [appNames]), 5, 5000);
         },
@@ -958,7 +958,7 @@ Ext.define("BIT.SDS.WindowUtil",
          * // SYNO.SDS.App.FileStation3.Instance;920;560
          */
         logSize: function(appNames) {
-            if (!appNames) appNames = BIT.SDS.WindowUtil.getAppNames();
+            if (!appNames) appNames = BIT.SDS.WindowUtil.getAppNamesForDsmVersion();
 
             BIT.SDS.WindowUtil.getSizeWithRetry(appNames)
                 .then(function(results) {
@@ -996,7 +996,7 @@ Ext.define("BIT.SDS.WindowUtil",
          * // Resets the window size and position for Package Center and High Availability Manager
          */
         resetRestoreSizeAndPosition: function(appNames) {
-            if (!appNames) appNames = BIT.SDS.WindowUtil.getAppNames();
+            if (!appNames) appNames = BIT.SDS.WindowUtil.getAppNamesForDsmVersion();
 
             Ext.each(appNames, function(appName) {
                 var restoreSizePosPropertyName = BIT.SDS.WindowUtil.getRestoreSizePosPropertyName(appName);
