@@ -756,18 +756,18 @@ Ext.define("BIT.SDS.WindowUtil",
         getSizeByLaunchingApp: function(appName, launchDelay) {
             return new BIT.SDS.Promise(function(resolve, reject) {
                 SYNO.SDS.AppLaunch.defer(launchDelay, this, [appName, {}, false, function(appInstance) {
-                    var windowSize;
+                    var appWinSize;
                     var appInstances;
 
                     if (Ext.isObject(appInstance)) {
-                        windowSize = new BIT.SDS.AppWinSize(appName, appInstance.window.getWidth(), appInstance.window.getHeight());
-                        resolve(windowSize);
+                        appWinSize = new BIT.SDS.AppWinSize(appName, appInstance.window.getWidth(), appInstance.window.getHeight());
+                        resolve(appWinSize);
                     } else {
                         appInstances = SYNO.SDS.AppMgr.getByAppName(appName);
 
                         if (appInstances.length > 0) {
-                            windowSize = new BIT.SDS.AppWinSize(appName, appInstances[0].window.getWidth(), appInstances[0].window.getHeight());
-                            resolve(windowSize);
+                            appWinSize = new BIT.SDS.AppWinSize(appName, appInstances[0].window.getWidth(), appInstances[0].window.getHeight());
+                            resolve(appWinSize);
                         } else {
                             reject(Error("Failed to launch " + appName));
                         }
@@ -806,12 +806,12 @@ Ext.define("BIT.SDS.WindowUtil",
                 var restoreSizePosPropertyName = BIT.SDS.WindowUtil.getRestoreSizePosPropertyName(appName);
                 var restoreSizePos = SYNO.SDS.UserSettings.getProperty(appName, restoreSizePosPropertyName);
                 var appInstances;
-                var windowSize;
+                var appWinSize;
 
                 if (restoreSizePos) {
                     if (Ext.isDefined(restoreSizePos.width) && Ext.isDefined(restoreSizePos.height)) {
-                        windowSize = new BIT.SDS.AppWinSize(appName, restoreSizePos.width, restoreSizePos.height);
-                        promises.push(BIT.SDS.Promise.resolve(windowSize));
+                        appWinSize = new BIT.SDS.AppWinSize(appName, restoreSizePos.width, restoreSizePos.height);
+                        promises.push(BIT.SDS.Promise.resolve(appWinSize));
                         return;
                     }
                 }
@@ -819,8 +819,8 @@ Ext.define("BIT.SDS.WindowUtil",
                 appInstances = SYNO.SDS.AppMgr.getByAppName(appName);
 
                 if (appInstances.length > 0) {
-                    windowSize = new BIT.SDS.AppWinSize(appName, appInstances[0].window.getWidth(), appInstances[0].window.getHeight());
-                    promises.push(BIT.SDS.Promise.resolve(windowSize));
+                    appWinSize = new BIT.SDS.AppWinSize(appName, appInstances[0].window.getWidth(), appInstances[0].window.getHeight());
+                    promises.push(BIT.SDS.Promise.resolve(appWinSize));
                     return;
                 }
 
