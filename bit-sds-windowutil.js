@@ -579,7 +579,7 @@ Ext.define("BIT.SDS.WindowUtil",
                 y: windowArea.y + windowArea.height
             };
 
-            Ext.each(BIT.SDS.WindowUtil.getAppData(), function(appData) {
+            Ext.each(BIT.SDS.WindowUtil.getAllAppData(), function(appData) {
                 var windowBottomRightCorner;
                 var appInstances;
 
@@ -660,11 +660,11 @@ Ext.define("BIT.SDS.WindowUtil",
          */
 
         /**
-         * Returns an array of {@link BIT.SDS.WindowUtil~AppData} for the supported applications.
+         * Returns an array of {@link BIT.SDS.WindowUtil~AppData} for all supported applications.
          *
          * @return     {BIT.SDS.WindowUtil~AppData[]}  An array of `AppData` objects.
          */
-        getAppData: function() {
+        getAllAppData: function() {
             if (!Ext.isArray(BIT.SDS.WindowUtil._appData) || (BIT.SDS.WindowUtil._appData.length !== BIT.SDS.WindowUtil._appDataArray.length)) {
                 BIT.SDS.WindowUtil._appData = [];
 
@@ -697,7 +697,7 @@ Ext.define("BIT.SDS.WindowUtil",
             var appNames = [];
             var dsmVersion = BIT.SDS.WindowUtil.getDsmVersion();
 
-            Ext.each(BIT.SDS.WindowUtil.getAppData(), function() {
+            Ext.each(BIT.SDS.WindowUtil.getAllAppData(), function() {
                 if (this.dsmVersions.indexOf(dsmVersion) !== -1) appNames.push(this.appName);
             });
 
