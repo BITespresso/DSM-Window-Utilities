@@ -452,56 +452,6 @@ Ext.define("BIT.SDS.Rectangle",
     }
 });
 
-Ext.namespace("BIT.SDS.Util");
-
-/**
- * @class      BIT.SDS.Util
- *
- * @hideconstructor
- */
-Ext.define("BIT.SDS.Util",
-{
-    /**
-     * @lends      BIT.SDS.Util
-     */
-    statics: {
-        /**
-         * Returns the DSM version installed on the DiskStation. The version has the format: `<major
-         * version>.<minor version>`
-         *
-         * @return     {string}  The DSM version.
-         *
-         * @example
-         * BIT.SDS.Util.getDsmVersion();
-         * // => 6.2
-         */
-        getDsmVersion: function() {
-            return _S("majorversion") + "." + _S("minorversion");
-        },
-
-        /**
-         * Returns true if the provided application is installed.
-         *
-         * @param      {string}   appName  The application name.
-         * @return     {boolean}  `true` if installed, `false` otherwise.
-         */
-        isInstalled: function(appName) {
-            return (SYNO.SDS.AppUtil.getApps().indexOf(appName) !== -1);
-        },
-
-        /**
-         * Returns true if the passed object has the properties of a {@link BIT.SDS.Rectangle} and
-         * these are all of type `number`.
-         *
-         * @param      {Object}   object  The object.
-         * @return     {boolean}  `true` if rectangle, `false` otherwise.
-         */
-        isRectangle: function(object) {
-            return Ext.isObject(object) && Ext.isNumber(object.x) && Ext.isNumber(object.y) && Ext.isNumber(object.width) && Ext.isNumber(object.height);
-        }
-    }
-});
-
 Ext.namespace("BIT.SDS.WindowUtil");
 
 /**
@@ -615,9 +565,9 @@ Ext.define("BIT.SDS.WindowUtil",
             var offsetX;
             var offsetY;
 
-            var dsmVersion = BIT.SDS.Util.getDsmVersion();
+            var dsmVersion = BIT.SDS.WindowUtil.getDsmVersion();
 
-            if (!BIT.SDS.Util.isRectangle(windowArea)) {
+            if (!BIT.SDS.WindowUtil.isRectangle(windowArea)) {
                 windowArea = BIT.SDS.WindowUtil.suggestWindowArea();
             }
 
@@ -679,7 +629,7 @@ Ext.define("BIT.SDS.WindowUtil",
                     if (appData.appName === "SYNO.SDS.CMS.Application") {
                         appInstances = SYNO.SDS.AppMgr.getByAppName(appData.appName);
 
-                        if ((appInstances.length === 0) && BIT.SDS.Util.isInstalled(appData.appName)) {
+                        if ((appInstances.length === 0) && BIT.SDS.WindowUtil.isInstalled(appData.appName)) {
                             SYNO.SDS.AppLaunch(appData.appName, {}, false, (function() {
                                 var x = offsetX;
                                 var y = offsetY;
@@ -745,13 +695,27 @@ Ext.define("BIT.SDS.WindowUtil",
          */
         getAppNamesForDsmVersion: function() {
             var appNames = [];
-            var dsmVersion = BIT.SDS.Util.getDsmVersion();
+            var dsmVersion = BIT.SDS.WindowUtil.getDsmVersion();
 
             Ext.each(BIT.SDS.WindowUtil.getAppData(), function() {
                 if (this.dsmVersions.indexOf(dsmVersion) !== -1) appNames.push(this.appName);
             });
 
             return appNames;
+        },
+
+        /**
+         * Returns the DSM version installed on the DiskStation. The version has the format: `<major
+         * version>.<minor version>`
+         *
+         * @return     {string}  The DSM version.
+         *
+         * @example
+         * BIT.SDS.WindowUtil.getDsmVersion();
+         * // => 6.2
+         */
+        getDsmVersion: function() {
+            return _S("majorversion") + "." + _S("minorversion");
         },
 
         /**
@@ -763,7 +727,7 @@ Ext.define("BIT.SDS.WindowUtil",
          */
         getRestoreSizePosPropertyName: function(appName) {
             var restoreSizePosPropertyName = "restoreSizePos";
-            var dsmVersion = BIT.SDS.Util.getDsmVersion();
+            var dsmVersion = BIT.SDS.WindowUtil.getDsmVersion();
 
             if (appName === "SYNO.SDS.HA.Instance") {
                 if (["5.2", "6.0", "6.1"].indexOf(dsmVersion) !== -1) {
@@ -896,7 +860,7 @@ Ext.define("BIT.SDS.WindowUtil",
                     return;
                 }
 
-                if (BIT.SDS.Util.isInstalled(appName)) {
+                if (BIT.SDS.WindowUtil.isInstalled(appName)) {
                     launchDelay += launchDelayIncrement;
                     promises.push(BIT.SDS.WindowUtil.getSizeByLaunchingApp(appName, launchDelay));
                     launchDelayIncrement = 1000;
@@ -938,6 +902,27 @@ Ext.define("BIT.SDS.WindowUtil",
             if (!appNames) appNames = BIT.SDS.WindowUtil.getAppNamesForDsmVersion();
 
             return BIT.SDS.Promise.retry(BIT.SDS.WindowUtil.getSize.createDelegate(this, [appNames]), 5, 5000);
+        },
+
+        /**
+         * Returns true if the provided application is installed.
+         *
+         * @param      {string}   appName  The application name.
+         * @return     {boolean}  `true` if installed, `false` otherwise.
+         */
+        isInstalled: function(appName) {
+            return (SYNO.SDS.AppUtil.getApps().indexOf(appName) !== -1);
+        },
+
+        /**
+         * Returns true if the passed object has the properties of a {@link BIT.SDS.Rectangle} and
+         * these are all of type `number`.
+         *
+         * @param      {Object}   object  The object.
+         * @return     {boolean}  `true` if rectangle, `false` otherwise.
+         */
+        isRectangle: function(object) {
+            return Ext.isObject(object) && Ext.isNumber(object.x) && Ext.isNumber(object.y) && Ext.isNumber(object.width) && Ext.isNumber(object.height);
         },
 
         /**
