@@ -741,42 +741,6 @@ Ext.define("BIT.SDS.WindowUtil",
         },
 
         /**
-         * Gets the size and page position of an application window.
-         *
-         * @param      {Ext.Window}  appWindow  The application window.
-         * @return     {Object}      An object with `x`, `y`, `width` and `height` properties.
-         *
-         * @example
-         * var appInstances = SYNO.SDS.AppMgr.getByAppName("SYNO.SDS.App.FileStation3.Instance");
-         * if (appInstances.length > 0) {
-         *   var appWindow = appInstances[0].window;
-         *   BIT.SDS.WindowUtil.getSizeAndPosition(appWindow);
-         * }
-         * // => {x: 300, y: 339, width: 920, height: 560}
-         */
-        getSizeAndPosition: function(appWindow) {
-            var sizeAndPosition;
-            var pagePosition;
-
-            if (!(appWindow instanceof Ext.Window)) return;
-
-            sizeAndPosition = appWindow.getSizeAndPosition();
-
-            if (!("pageX" in sizeAndPosition) || !("pageY" in sizeAndPosition)) {
-                pagePosition = BIT.SDS.WindowUtil.translateElementPointsToPagePosition(appWindow, sizeAndPosition.x, sizeAndPosition.y);
-                sizeAndPosition.pageX = pagePosition.x;
-                sizeAndPosition.pageY = pagePosition.y;
-            }
-
-            return {
-                x:      sizeAndPosition.pageX,
-                y:      sizeAndPosition.pageY,
-                width:  sizeAndPosition.width,
-                height: sizeAndPosition.height
-            };
-        },
-
-        /**
          * Retrieves the window size of the provided application by launching the application. If
          * the application window is already open, the current size of this window is returned.
          *
