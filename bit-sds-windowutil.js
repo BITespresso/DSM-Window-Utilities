@@ -589,18 +589,18 @@ Ext.define("BIT.SDS.WindowUtil",
         /**
          * Sets the restore XY position of all applications to cascaded, overlapping positions
          * determined by the specified window area and resets the restore size. The algorithm used
-         * ensures that each window has a position that depends entirely on the specified window area,
-         * regardless of which applications are installed or which DSM version is used.
+         * ensures that each window has a position that depends entirely on the specified window
+         * area, regardless of which applications are installed or which DSM version is used.
          *
-         * **Note 1**: Currently open application windows will not change their size and position. You
-         * must close and reopen the windows to see the result. Do not move or resize the application
-         * window beforehand, as this immediately sets the restore size and position to the current
-         * window size and position.
+         * **Note 1**: Currently open application windows will not change their size and position.
+         * You must close and reopen the windows to see the result. Do not move or resize the
+         * application window beforehand, as this immediately sets the restore size and position to
+         * the current window size and position.
          *
          * **Note 2**: The Synology CMS (Central Management System) application
-         * (`SYNO.SDS.CMS.Application`) does not read the restore size and position due to a bug in DSM.
-         * To ensure that this window has the correct size and position, each time this method is
-         * called, the window will be opened and set to the correct size and position.
+         * (`SYNO.SDS.CMS.Application`) does not read the restore size and position due to a bug in
+         * DSM. To ensure that this window has the correct size and position, each time this method
+         * is called, the window will be opened and set to the correct size and position.
          *
          * @param      {BIT.SDS.Rectangle}  [windowArea]  The window area.
          *
@@ -813,8 +813,8 @@ Ext.define("BIT.SDS.WindowUtil",
         },
 
         /**
-         * Retrieves the window size of the provided application by launching the application. If the
-         * application window is already open, the current size of this window is returned.
+         * Retrieves the window size of the provided application by launching the application. If
+         * the application window is already open, the current size of this window is returned.
          *
          * The application will be launched after a delay specified in milliseconds.
          *
@@ -849,8 +849,8 @@ Ext.define("BIT.SDS.WindowUtil",
         },
 
         /**
-         * Retrieves the window size(s) of the provided or all application(s). To retrieve the window
-         * sizes, different methods will be applied until the first succeeds:
+         * Retrieves the window size(s) of the provided or all application(s). To retrieve the
+         * window sizes, different methods will be applied until the first succeeds:
          *
          * * Get the window size from the restore size property
          * * Get the size from an open window of the respective application
@@ -859,8 +859,9 @@ Ext.define("BIT.SDS.WindowUtil",
          * Launching the application(s) is an asychronous operation, therefore this method returns a
          * promise that is fulfilled with an array of the window sizes.
          *
-         * If you call this method without providing `appNames`, all application window sizes will be
-         * retrieved.
+         * If you call this method without providing `appNames`, the window sizes of all
+         * applications that can open a window on the DSM desktop and are currently installed on the
+         * DiskStation will be retrieved.
          *
          * @param      {string[]|string}  [appNames]  The application name(s).
          * @return     {BIT.SDS.Promise}  A new promise.
@@ -913,8 +914,8 @@ Ext.define("BIT.SDS.WindowUtil",
         },
 
         /**
-         * Retrieves the window size(s) of the provided or all application(s). To retrieve the window
-         * sizes, different methods will be applied until the first succeeds:
+         * Retrieves the window size(s) of the provided or all application(s). To retrieve the
+         * window sizes, different methods will be applied until the first succeeds:
          *
          * * Get the window size from the restore size property
          * * Get the size from an open window of the respective application
@@ -923,11 +924,12 @@ Ext.define("BIT.SDS.WindowUtil",
          * Launching the application(s) is an asychronous operation, therefore this method returns a
          * promise that is fulfilled with an array of the window sizes.
          *
-         * If you call this method without providing `appNames`, all application window sizes will be
-         * retrieved.
+         * If you call this method without providing `appNames`, the window sizes of all
+         * applications that can open a window on the DSM desktop and are currently installed on the
+         * DiskStation will be retrieved.
          *
-         * In addition to {@link getSize}, this method will make several attempts to determine window
-         * sizes and is therefore more robust.
+         * In addition to {@link getSize}, this method will make several attempts to determine
+         * window sizes and is therefore more robust.
          *
          * @param      {string[]|string}  [appNames]  The application name(s).
          * @return     {BIT.SDS.Promise}  A new promise.
@@ -939,11 +941,12 @@ Ext.define("BIT.SDS.WindowUtil",
         },
 
         /**
-         * Logs the window size(s) of the provided or all application(s) to the console in CSV format.
-         * The record format is: `<application name>,<width>,<height>`
+         * Logs the window size(s) of the provided or all application(s) to the console in CSV
+         * format. The record format is: `<application name>,<width>,<height>`
          *
-         * If you call this method without providing `appNames`, all application window sizes will be
-         * logged.
+         * If you call this method without providing `appNames`, the window sizes of all
+         * applications that can open a window on the DSM desktop and are currently installed on the
+         * DiskStation will be logged.
          *
          * @param      {string[]|string}  [appNames]  The application name(s).
          *
@@ -974,12 +977,14 @@ Ext.define("BIT.SDS.WindowUtil",
         /**
          * Resets the restore size and XY position of the provided application(s).
          *
-         * If you call this method without providing `appNames`, all application windows will be reset.
+         * If you call this method without providing `appNames`, all applications that can open a
+         * window on the DSM desktop and are available for the DSM version currently installed on
+         * DiskStation will be reset.
          *
          * **Note**: Currently open application windows will not change their size and position. You
-         * must close and reopen the windows to see the result. Do not move or resize the application
-         * window beforehand, as this immediately sets the restore size and position to the current
-         * window size and position.
+         * must close and reopen the windows to see the result. Do not move or resize the
+         * application window beforehand, as this immediately sets the restore size and position to
+         * the current window size and position.
          *
          * @param      {string[]|string}  [appNames]  The application name(s).
          *
@@ -1008,9 +1013,10 @@ Ext.define("BIT.SDS.WindowUtil",
         /**
          * Sets the restore page XY position of the provided application.
          *
-         * **Note**: Currently open application windows will not change their position. You must close
-         * and reopen the windows to see the result. Do not move or resize the application window
-         * beforehand, as this immediately sets the restore position to the current window position.
+         * **Note**: Currently open application windows will not change their position. You must
+         * close and reopen the windows to see the result. Do not move or resize the application
+         * window beforehand, as this immediately sets the restore position to the current window
+         * position.
          *
          * @param      {string}  appName  The application name.
          * @param      {number}  x        The page x position.
@@ -1112,8 +1118,9 @@ Ext.define("BIT.SDS.WindowUtil",
         },
 
         /**
-         * Translates the passed left/top CSS values for the window into page coordinates. If a provided
-         * value is undefined, the corresponding property in the returned object will also be undefined.
+         * Translates the passed left/top CSS values for the window into page coordinates. If a
+         * provided value is undefined, the corresponding property in the returned object will also
+         * be undefined.
          *
          * @param      {Ext.Window}        appWindow  The application window.
          * @param      {number|undefined}  left       Left CSS value.
@@ -1137,9 +1144,9 @@ Ext.define("BIT.SDS.WindowUtil",
         },
 
         /**
-         * Translates the passed page coordinates into left/top CSS values for the window. If a provided
-         * coordinate is undefined, the corresponding property in the returned object will also be
-         * undefined.
+         * Translates the passed page coordinates into left/top CSS values for the window. If a
+         * provided coordinate is undefined, the corresponding property in the returned object will
+         * also be undefined.
          *
          * @param      {Ext.Window}        appWindow  The application window.
          * @param      {number|undefined}  x          X-coordinate of the upper left egde.
