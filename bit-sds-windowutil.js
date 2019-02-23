@@ -1064,58 +1064,6 @@ Ext.define("BIT.SDS.WindowUtil",
             console.log("Using suggested window area: windowArea = " + windowAreaLiteral);
 
             return windowArea;
-        },
-
-        /**
-         * Translates the passed left/top CSS values for the window into page coordinates. If a
-         * provided value is undefined, the corresponding property in the returned object will also
-         * be undefined.
-         *
-         * @param      {Ext.Window}        appWindow  The application window.
-         * @param      {number|undefined}  left       Left CSS value.
-         * @param      {number|undefined}  top        Top CSS value.
-         * @return     {Object}            An object with `x` and `y` properties.
-         *
-         * @example
-         * var appInstances = SYNO.SDS.AppMgr.getByAppName("SYNO.SDS.App.FileStation3.Instance");
-         * if (appInstances.length > 0) {
-         *   var appWindow = appInstances[0].window;
-         *   BIT.SDS.WindowUtil.translateElementPointsToPagePosition(appWindow, 0, 0);
-         * }
-         * // => {x: 0, y: 39}
-         */
-        translateElementPointsToPagePosition: function(appWindow, left, top) {
-            var offset = appWindow.getPositionEl().translatePoints(0, 0);
-            return {
-                x: left - offset.left,
-                y: top  - offset.top
-            };
-        },
-
-        /**
-         * Translates the passed page coordinates into left/top CSS values for the window. If a
-         * provided coordinate is undefined, the corresponding property in the returned object will
-         * also be undefined.
-         *
-         * @param      {Ext.Window}        appWindow  The application window.
-         * @param      {number|undefined}  x          X-coordinate of the upper left egde.
-         * @param      {number|undefined}  y          Y-coordinate of the upper left egde.
-         * @return     {Object}            An object with `left` and `top` properties.
-         *
-         * @example
-         * var appInstances = SYNO.SDS.AppMgr.getByAppName("SYNO.SDS.App.FileStation3.Instance");
-         * if (appInstances.length > 0) {
-         *   var appWindow = appInstances[0].window;
-         *   BIT.SDS.WindowUtil.translatePagePositionToElementPoints(appWindow, 0, 0);
-         * }
-         * // => {left: 0, top: -39}
-         */
-        translatePagePositionToElementPoints: function(appWindow, x, y) {
-            var offset = appWindow.getPositionEl().translatePoints(0, 0);
-            return {
-                left: x + offset.left,
-                top:  y + offset.top
-            };
         }
     }
 });
