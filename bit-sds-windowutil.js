@@ -10,16 +10,6 @@ Ext.namespace("BIT");
  */
 Ext.namespace("BIT.SDS");
 
-/**
- * Performs the required initializations of the DSM utilities. This method **must** be called once
- * before you call any other method from the DSM utilities.
- *
- * @method     BIT.SDS.init
- */
-BIT.SDS.init = function() {
-    BIT.SDS.WindowUtil = new BIT.SDS._WindowUtil();
-};
-
 Ext.namespace("BIT.SDS.AppWinSize");
 
 Ext.define("BIT.SDS.AppWinSize",
@@ -512,18 +502,20 @@ Ext.define("BIT.SDS.Util",
     }
 });
 
-Ext.namespace("BIT.SDS._WindowUtil");
+Ext.namespace("BIT.SDS.WindowUtil");
 
-Ext.define("BIT.SDS._WindowUtil",
 /**
- * @lends      BIT.SDS._WindowUtil.prototype
+ * @class      BIT.SDS.WindowUtil
+ *
+ * @hideconstructor
  */
+Ext.define("BIT.SDS.WindowUtil",
 {
     /**
-     * @lends      BIT.SDS._WindowUtil
+     * @lends      BIT.SDS.WindowUtil
      */
     statics: {
-        _appWindowDataList: [
+        _appDataArray: [
             ["SYNO.SDS.AdminCenter.Application",        ["5.2", "6.0", "6.1", "6.2"], [ 994, 570]],
             ["SYNO.SDS.App.FileStation3.Instance",      ["5.2", "6.0", "6.1", "6.2"], [ 920, 560]],
             ["SYNO.SDS.EzInternet.Instance",            ["5.2", "6.0", "6.1", "6.2"], [ 700, 464]],
@@ -590,580 +582,584 @@ Ext.define("BIT.SDS._WindowUtil",
             ["SYNO.ActiveBackup.AppInstance",           [                     "6.2"], [1184, 580]],
             ["SYNO.SDS.ADServer.Application",           [                     "6.2"], [ 990, 560]],
             ["SYNO.SDS.Virtualization.Application",     [                     "6.2"], [1038, 637]]
-        ]
-    },
+        ],
 
-    appWindowDataList: null,
+        _appData: [],
 
-    /**
-     * Creates a new {@link BIT.SDS._WindowUtil} instance. Do **not call** this constructor in your
-     * code. Instead, use {@link BIT.SDS.init}, which creates an instance of
-     * {@link BIT.SDS._WindowUtil} as `BIT.SDS.WindowUtil` that you can use directly.
-     *
-     * @method     BIT.SDS._WindowUtil
-     * @constructs
-     *
-     * @example
-     * BIT.SDS.init();
-     * BIT.SDS.WindowUtil.getAppNames();
-     * // => ["SYNO.SDS.AdminCenter.Application", ...]
-     */
-    constructor: function() {
-        this.appWindowDataList = [];
+        /**
+         * Sets the restore XY position of all applications to cascaded, overlapping positions
+         * determined by the specified window area and resets the restore size. The algorithm used
+         * ensures that each window has a position that depends entirely on the specified window area,
+         * regardless of which applications are installed or which DSM version is used.
+         *
+         * **Note 1**: Currently open application windows will not change their size and position. You
+         * must close and reopen the windows to see the result. Do not move or resize the application
+         * window beforehand, as this immediately sets the restore size and position to the current
+         * window size and position.
+         *
+         * **Note 2**: The Synology CMS (Central Management System) application
+         * (`SYNO.SDS.CMS.Application`) does not read the restore size and position due to a bug in DSM.
+         * To ensure that this window has the correct size and position, each time this method is
+         * called, the window will be opened and set to the correct size and position.
+         *
+         * @param      {BIT.SDS.Rectangle}  [windowArea]  The window area.
+         *
+         * @example
+         * BIT.SDS.WindowUtil.cascadeOverlap();
+         *
+         * @example
+         * BIT.SDS.WindowUtil.cascadeOverlap({x: 160, y: 139, width: 1640, height: 830});
+         */
+        cascadeOverlap: function(windowArea) {
+            var windowAreaBottomRightCorner;
+            var offsetX;
+            var offsetY;
 
-        Ext.each(BIT.SDS._WindowUtil._appWindowDataList, function(_appWindowData) {
-            var appWindowData = {
-                appName:                _appWindowData[0],
-                dsmVersions:            _appWindowData[1],
-                maxInitialWindowWidth:  _appWindowData[2][0],
-                maxInitialWindowHeight: _appWindowData[2][1]
+            var dsmVersion = BIT.SDS.Util.getDsmVersion();
+
+            if (!BIT.SDS.Util.isRectangle(windowArea)) {
+                windowArea = BIT.SDS.WindowUtil.suggestWindowArea();
+            }
+
+            offsetX = windowArea.x;
+            offsetY = windowArea.y;
+
+            windowAreaBottomRightCorner = {
+                x: windowArea.x + windowArea.width,
+                y: windowArea.y + windowArea.height
             };
 
-            this.appWindowDataList.push(appWindowData);
-        }, this);
-    },
-
-    /**
-     * Sets the restore XY position of all applications to cascaded, overlapping positions
-     * determined by the specified window area and resets the restore size. The algorithm used
-     * ensures that each window has a position that depends entirely on the specified window area,
-     * regardless of which applications are installed or which DSM version is used.
-     *
-     * **Note 1**: Currently open application windows will not change their size and position. You
-     * must close and reopen the windows to see the result. Do not move or resize the application
-     * window beforehand, as this immediately sets the restore size and position to the current
-     * window size and position.
-     *
-     * **Note 2**: The Synology CMS (Central Management System) application
-     * (`SYNO.SDS.CMS.Application`) does not read the restore size and position due to a bug in DSM.
-     * To ensure that this window has the correct size and position, each time this method is
-     * called, the window will be opened and set to the correct size and position.
-     *
-     * @param      {BIT.SDS.Rectangle}  [windowArea]  The window area.
-     *
-     * @example
-     * BIT.SDS.WindowUtil.cascadeOverlap();
-     *
-     * @example
-     * BIT.SDS.WindowUtil.cascadeOverlap({x: 160, y: 139, width: 1640, height: 830});
-     */
-    cascadeOverlap: function(windowArea) {
-        var windowAreaBottomRightCorner;
-        var offsetX;
-        var offsetY;
-
-        var dsmVersion = BIT.SDS.Util.getDsmVersion();
-
-        if (!BIT.SDS.Util.isRectangle(windowArea)) {
-            windowArea = BIT.SDS.WindowUtil.suggestWindowArea();
-        }
-
-        offsetX = windowArea.x;
-        offsetY = windowArea.y;
-
-        windowAreaBottomRightCorner = {
-            x: windowArea.x + windowArea.width,
-            y: windowArea.y + windowArea.height
-        };
-
-        Ext.each(this.appWindowDataList, function(appWindowData) {
-            var windowBottomRightCorner;
-            var appInstances;
-
-            windowBottomRightCorner = {
-                x: offsetX + appWindowData.maxInitialWindowWidth,
-                y: offsetY + appWindowData.maxInitialWindowHeight
-            };
-
-            if (windowBottomRightCorner.x > windowAreaBottomRightCorner.x && windowBottomRightCorner.y > windowAreaBottomRightCorner.y) {
-                offsetX = windowArea.x;
-                offsetY = windowArea.y;
-            } else {
-                if (windowBottomRightCorner.x > windowAreaBottomRightCorner.x) {
-                    if (offsetX === windowArea.x) {
-                        offsetY = windowArea.y;
-                    }
-                    offsetX = windowArea.x;
-                } else {
-                    if (windowBottomRightCorner.y > windowAreaBottomRightCorner.y) {
-                        // offsetX += 30;
-                        offsetY = windowArea.y;
-                    }
-                }
-            }
-
-            if (windowBottomRightCorner.x > windowAreaBottomRightCorner.x && windowBottomRightCorner.y > windowAreaBottomRightCorner.y) {
-                offsetX = windowArea.x;
-                offsetY = windowArea.y;
-            } else {
-                if (windowBottomRightCorner.x > windowAreaBottomRightCorner.x) {
-                    if (offsetX === windowArea.x) {
-                        offsetY = windowArea.y;
-                    }
-                    offsetX = windowArea.x;
-                } else {
-                    if (windowBottomRightCorner.y > windowAreaBottomRightCorner.y) {
-                        // offsetX += 30;
-                        offsetY = windowArea.y;
-                    }
-                }
-            }
-
-            if (appWindowData.dsmVersions.indexOf(dsmVersion) !== -1) {
-                BIT.SDS.WindowUtil.resetRestoreSizeAndPosition(appWindowData.appName);
-                BIT.SDS.WindowUtil.setRestorePagePosition(appWindowData.appName, offsetX, offsetY);
-
-                if (appWindowData.appName === "SYNO.SDS.CMS.Application") {
-                    appInstances = SYNO.SDS.AppMgr.getByAppName(appWindowData.appName);
-
-                    if ((appInstances.length === 0) && BIT.SDS.Util.isInstalled(appWindowData.appName)) {
-                        SYNO.SDS.AppLaunch(appWindowData.appName, {}, false, (function() {
-                            var x = offsetX;
-                            var y = offsetY;
-
-                            return function(appInstance) {
-                                if (Ext.isObject(appInstance)) {
-                                    appInstance.window.setPagePosition(x, y);
-                                }
-                            };
-                        })(), this);
-                    }
-                }
-            }
-
-            offsetX += 30;
-            offsetY += 30;
-        }, this);
-    },
-
-    /**
-     * Returns a list of all applications available for the DSM version installed on the
-     * DiskStation, which open a window on the DSM desktop.
-     *
-     * @return     {string[]}  The list of application names.
-     *
-     * @example
-     * BIT.SDS.WindowUtil.getAppNames();
-     * // => ["SYNO.SDS.AdminCenter.Application", ...]
-     */
-    getAppNames: function() {
-        var appNames = [];
-        var dsmVersion = BIT.SDS.Util.getDsmVersion();
-
-        Ext.each(this.appWindowDataList, function() {
-            if (this.dsmVersions.indexOf(dsmVersion) !== -1) appNames.push(this.appName);
-        });
-
-        return appNames;
-    },
-
-    /**
-     * Returns the name of the property, which contains the restore size and position of the
-     * application window.
-     *
-     * @param      {string}  appName  The application name.
-     * @return     {string}  The property name.
-     */
-    getRestoreSizePosPropertyName: function(appName) {
-        var restoreSizePosPropertyName = "restoreSizePos";
-        var dsmVersion = BIT.SDS.Util.getDsmVersion();
-
-        if (appName === "SYNO.SDS.HA.Instance") {
-            if (["5.2", "6.0", "6.1"].indexOf(dsmVersion) !== -1) {
-                restoreSizePosPropertyName = "restoreSizePos";
-            } else {
-                restoreSizePosPropertyName = "bindHAWizardWindowRestoreSizePos";
-            }
-        }
-
-        return restoreSizePosPropertyName;
-    },
-
-    /**
-     * Gets the size and page position of an application window.
-     *
-     * @param      {Ext.Window}  appWindow  The application window.
-     * @return     {Object}      An object with `x`, `y`, `width` and `height` properties.
-     *
-     * @example
-     * var appInstances = SYNO.SDS.AppMgr.getByAppName("SYNO.SDS.App.FileStation3.Instance");
-     * if (appInstances.length > 0) {
-     *   var appWindow = appInstances[0].window;
-     *   BIT.SDS.WindowUtil.getSizeAndPosition(appWindow);
-     * }
-     * // => {x: 300, y: 339, width: 920, height: 560}
-     */
-    getSizeAndPosition: function(appWindow) {
-        var sizeAndPosition;
-        var pagePosition;
-
-        if (!(appWindow instanceof Ext.Window)) return;
-
-        sizeAndPosition = appWindow.getSizeAndPosition();
-
-        if (!("pageX" in sizeAndPosition) || !("pageY" in sizeAndPosition)) {
-            pagePosition = BIT.SDS.WindowUtil.translateElementPointsToPagePosition(appWindow, sizeAndPosition.x, sizeAndPosition.y);
-            sizeAndPosition.pageX = pagePosition.x;
-            sizeAndPosition.pageY = pagePosition.y;
-        }
-
-        return {
-            x:      sizeAndPosition.pageX,
-            y:      sizeAndPosition.pageY,
-            width:  sizeAndPosition.width,
-            height: sizeAndPosition.height
-        };
-    },
-
-    /**
-     * Retrieves the window size of the provided application by launching the application. If the
-     * application window is already open, the current size of this window is returned.
-     *
-     * The application will be launched after a delay specified in milliseconds.
-     *
-     * Launching the application is an asychronous operation, therefore this method returns a
-     * promise that is fulfilled with the window size.
-     *
-     * @param      {string}           appName      The application name.
-     * @param      {number}           launchDelay  The launch delay.
-     * @return     {BIT.SDS.Promise}  A new promise.
-     */
-    getSizeByLaunchingApp: function(appName, launchDelay) {
-        return new BIT.SDS.Promise(function(resolve, reject) {
-            SYNO.SDS.AppLaunch.defer(launchDelay, this, [appName, {}, false, function(appInstance) {
-                var windowSize;
+            Ext.each(BIT.SDS.WindowUtil.getAppData(), function(appData) {
+                var windowBottomRightCorner;
                 var appInstances;
 
-                if (Ext.isObject(appInstance)) {
-                    windowSize = new BIT.SDS.AppWinSize(appName, appInstance.window.getWidth(), appInstance.window.getHeight());
-                    resolve(windowSize);
-                } else {
-                    appInstances = SYNO.SDS.AppMgr.getByAppName(appName);
+                windowBottomRightCorner = {
+                    x: offsetX + appData.maxDefaultWidth,
+                    y: offsetY + appData.maxDefaultHeight
+                };
 
-                    if (appInstances.length > 0) {
-                        windowSize = new BIT.SDS.AppWinSize(appName, appInstances[0].window.getWidth(), appInstances[0].window.getHeight());
-                        resolve(windowSize);
+                if (windowBottomRightCorner.x > windowAreaBottomRightCorner.x && windowBottomRightCorner.y > windowAreaBottomRightCorner.y) {
+                    offsetX = windowArea.x;
+                    offsetY = windowArea.y;
+                } else {
+                    if (windowBottomRightCorner.x > windowAreaBottomRightCorner.x) {
+                        if (offsetX === windowArea.x) {
+                            offsetY = windowArea.y;
+                        }
+                        offsetX = windowArea.x;
                     } else {
-                        reject(Error("Failed to launch " + appName));
+                        if (windowBottomRightCorner.y > windowAreaBottomRightCorner.y) {
+                            // offsetX += 30;
+                            offsetY = windowArea.y;
+                        }
                     }
                 }
-            }, this]);
-        });
-    },
 
-    /**
-     * Retrieves the window size(s) of the provided or all application(s). To retrieve the window
-     * sizes, different methods will be applied until the first succeeds:
-     *
-     * * Get the window size from the restore size property
-     * * Get the size from an open window of the respective application
-     * * Launch the application and get the size of the opened window
-     *
-     * Launching the application(s) is an asychronous operation, therefore this method returns a
-     * promise that is fulfilled with an array of the window sizes.
-     *
-     * If you call this method without providing `appNames`, all application window sizes will be
-     * retrieved.
-     *
-     * @param      {string[]|string}  [appNames]  The application name(s).
-     * @return     {BIT.SDS.Promise}  A new promise.
-     */
-    getSize: function(appNames) {
-        var rejectAfterTimeoutPromise;
-        var promises = [];
-        var launchDelay = 0;
-        var launchDelayIncrement = 0;
+                if (windowBottomRightCorner.x > windowAreaBottomRightCorner.x && windowBottomRightCorner.y > windowAreaBottomRightCorner.y) {
+                    offsetX = windowArea.x;
+                    offsetY = windowArea.y;
+                } else {
+                    if (windowBottomRightCorner.x > windowAreaBottomRightCorner.x) {
+                        if (offsetX === windowArea.x) {
+                            offsetY = windowArea.y;
+                        }
+                        offsetX = windowArea.x;
+                    } else {
+                        if (windowBottomRightCorner.y > windowAreaBottomRightCorner.y) {
+                            // offsetX += 30;
+                            offsetY = windowArea.y;
+                        }
+                    }
+                }
 
-        if (!appNames) appNames = BIT.SDS.WindowUtil.getAppNames();
+                if (appData.dsmVersions.indexOf(dsmVersion) !== -1) {
+                    BIT.SDS.WindowUtil.resetRestoreSizeAndPosition(appData.appName);
+                    BIT.SDS.WindowUtil.setRestorePagePosition(appData.appName, offsetX, offsetY);
 
-        Ext.each(appNames, function(appName) {
-            var restoreSizePosPropertyName = BIT.SDS.WindowUtil.getRestoreSizePosPropertyName(appName);
-            var restoreSizePos = SYNO.SDS.UserSettings.getProperty(appName, restoreSizePosPropertyName);
-            var appInstances;
-            var windowSize;
+                    if (appData.appName === "SYNO.SDS.CMS.Application") {
+                        appInstances = SYNO.SDS.AppMgr.getByAppName(appData.appName);
 
-            if (restoreSizePos) {
-                if (Ext.isDefined(restoreSizePos.width) && Ext.isDefined(restoreSizePos.height)) {
-                    windowSize = new BIT.SDS.AppWinSize(appName, restoreSizePos.width, restoreSizePos.height);
+                        if ((appInstances.length === 0) && BIT.SDS.Util.isInstalled(appData.appName)) {
+                            SYNO.SDS.AppLaunch(appData.appName, {}, false, (function() {
+                                var x = offsetX;
+                                var y = offsetY;
+
+                                return function(appInstance) {
+                                    if (Ext.isObject(appInstance)) {
+                                        appInstance.window.setPagePosition(x, y);
+                                    }
+                                };
+                            })(), this);
+                        }
+                    }
+                }
+
+                offsetX += 30;
+                offsetY += 30;
+            }, this);
+        },
+
+        /**
+         * An object containing data about an application.
+         *
+         * @typedef    {Object}    BIT.SDS.WindowUtil~AppData
+         * @property   {string}    appName           The application name.
+         * @property   {string[]}  dsmVersions       An array of DSM versions.
+         * @property   {number}    maxDefaultWidth   The maximum default window width.
+         * @property   {number}    maxDefaultHeight  The maximum default window height.
+         */
+
+        /**
+         * Returns an array of {@link BIT.SDS.WindowUtil~AppData} for the supported applications.
+         *
+         * @return     {BIT.SDS.WindowUtil~AppData[]}  An array of `AppData` objects.
+         */
+        getAppData: function() {
+            if (!Ext.isArray(BIT.SDS.WindowUtil._appData) || (BIT.SDS.WindowUtil._appData.length !== BIT.SDS.WindowUtil._appDataArray.length)) {
+                BIT.SDS.WindowUtil._appData = [];
+
+                Ext.each(BIT.SDS.WindowUtil._appDataArray, function(_appData) {
+                    var appData = {
+                        appName:          _appData[0],
+                        dsmVersions:      _appData[1],
+                        maxDefaultWidth:  _appData[2][0],
+                        maxDefaultHeight: _appData[2][1]
+                    };
+
+                    BIT.SDS.WindowUtil._appData.push(appData);
+                }, this);
+            }
+
+            return BIT.SDS.WindowUtil._appData;
+        },
+
+        /**
+         * Returns a list of all applications available for the DSM version installed on the
+         * DiskStation, which open a window on the DSM desktop.
+         *
+         * @return     {string[]}  The list of application names.
+         *
+         * @example
+         * BIT.SDS.WindowUtil.getAppNames();
+         * // => ["SYNO.SDS.AdminCenter.Application", ...]
+         */
+        getAppNames: function() {
+            var appNames = [];
+            var dsmVersion = BIT.SDS.Util.getDsmVersion();
+
+            Ext.each(BIT.SDS.WindowUtil.getAppData(), function() {
+                if (this.dsmVersions.indexOf(dsmVersion) !== -1) appNames.push(this.appName);
+            });
+
+            return appNames;
+        },
+
+        /**
+         * Returns the name of the property, which contains the restore size and position of the
+         * application window.
+         *
+         * @param      {string}  appName  The application name.
+         * @return     {string}  The property name.
+         */
+        getRestoreSizePosPropertyName: function(appName) {
+            var restoreSizePosPropertyName = "restoreSizePos";
+            var dsmVersion = BIT.SDS.Util.getDsmVersion();
+
+            if (appName === "SYNO.SDS.HA.Instance") {
+                if (["5.2", "6.0", "6.1"].indexOf(dsmVersion) !== -1) {
+                    restoreSizePosPropertyName = "restoreSizePos";
+                } else {
+                    restoreSizePosPropertyName = "bindHAWizardWindowRestoreSizePos";
+                }
+            }
+
+            return restoreSizePosPropertyName;
+        },
+
+        /**
+         * Gets the size and page position of an application window.
+         *
+         * @param      {Ext.Window}  appWindow  The application window.
+         * @return     {Object}      An object with `x`, `y`, `width` and `height` properties.
+         *
+         * @example
+         * var appInstances = SYNO.SDS.AppMgr.getByAppName("SYNO.SDS.App.FileStation3.Instance");
+         * if (appInstances.length > 0) {
+         *   var appWindow = appInstances[0].window;
+         *   BIT.SDS.WindowUtil.getSizeAndPosition(appWindow);
+         * }
+         * // => {x: 300, y: 339, width: 920, height: 560}
+         */
+        getSizeAndPosition: function(appWindow) {
+            var sizeAndPosition;
+            var pagePosition;
+
+            if (!(appWindow instanceof Ext.Window)) return;
+
+            sizeAndPosition = appWindow.getSizeAndPosition();
+
+            if (!("pageX" in sizeAndPosition) || !("pageY" in sizeAndPosition)) {
+                pagePosition = BIT.SDS.WindowUtil.translateElementPointsToPagePosition(appWindow, sizeAndPosition.x, sizeAndPosition.y);
+                sizeAndPosition.pageX = pagePosition.x;
+                sizeAndPosition.pageY = pagePosition.y;
+            }
+
+            return {
+                x:      sizeAndPosition.pageX,
+                y:      sizeAndPosition.pageY,
+                width:  sizeAndPosition.width,
+                height: sizeAndPosition.height
+            };
+        },
+
+        /**
+         * Retrieves the window size of the provided application by launching the application. If the
+         * application window is already open, the current size of this window is returned.
+         *
+         * The application will be launched after a delay specified in milliseconds.
+         *
+         * Launching the application is an asychronous operation, therefore this method returns a
+         * promise that is fulfilled with the window size.
+         *
+         * @param      {string}           appName      The application name.
+         * @param      {number}           launchDelay  The launch delay.
+         * @return     {BIT.SDS.Promise}  A new promise.
+         */
+        getSizeByLaunchingApp: function(appName, launchDelay) {
+            return new BIT.SDS.Promise(function(resolve, reject) {
+                SYNO.SDS.AppLaunch.defer(launchDelay, this, [appName, {}, false, function(appInstance) {
+                    var windowSize;
+                    var appInstances;
+
+                    if (Ext.isObject(appInstance)) {
+                        windowSize = new BIT.SDS.AppWinSize(appName, appInstance.window.getWidth(), appInstance.window.getHeight());
+                        resolve(windowSize);
+                    } else {
+                        appInstances = SYNO.SDS.AppMgr.getByAppName(appName);
+
+                        if (appInstances.length > 0) {
+                            windowSize = new BIT.SDS.AppWinSize(appName, appInstances[0].window.getWidth(), appInstances[0].window.getHeight());
+                            resolve(windowSize);
+                        } else {
+                            reject(Error("Failed to launch " + appName));
+                        }
+                    }
+                }, this]);
+            });
+        },
+
+        /**
+         * Retrieves the window size(s) of the provided or all application(s). To retrieve the window
+         * sizes, different methods will be applied until the first succeeds:
+         *
+         * * Get the window size from the restore size property
+         * * Get the size from an open window of the respective application
+         * * Launch the application and get the size of the opened window
+         *
+         * Launching the application(s) is an asychronous operation, therefore this method returns a
+         * promise that is fulfilled with an array of the window sizes.
+         *
+         * If you call this method without providing `appNames`, all application window sizes will be
+         * retrieved.
+         *
+         * @param      {string[]|string}  [appNames]  The application name(s).
+         * @return     {BIT.SDS.Promise}  A new promise.
+         */
+        getSize: function(appNames) {
+            var rejectAfterTimeoutPromise;
+            var promises = [];
+            var launchDelay = 0;
+            var launchDelayIncrement = 0;
+
+            if (!appNames) appNames = BIT.SDS.WindowUtil.getAppNames();
+
+            Ext.each(appNames, function(appName) {
+                var restoreSizePosPropertyName = BIT.SDS.WindowUtil.getRestoreSizePosPropertyName(appName);
+                var restoreSizePos = SYNO.SDS.UserSettings.getProperty(appName, restoreSizePosPropertyName);
+                var appInstances;
+                var windowSize;
+
+                if (restoreSizePos) {
+                    if (Ext.isDefined(restoreSizePos.width) && Ext.isDefined(restoreSizePos.height)) {
+                        windowSize = new BIT.SDS.AppWinSize(appName, restoreSizePos.width, restoreSizePos.height);
+                        promises.push(BIT.SDS.Promise.resolve(windowSize));
+                        return;
+                    }
+                }
+
+                appInstances = SYNO.SDS.AppMgr.getByAppName(appName);
+
+                if (appInstances.length > 0) {
+                    windowSize = new BIT.SDS.AppWinSize(appName, appInstances[0].window.getWidth(), appInstances[0].window.getHeight());
                     promises.push(BIT.SDS.Promise.resolve(windowSize));
                     return;
                 }
-            }
 
-            appInstances = SYNO.SDS.AppMgr.getByAppName(appName);
+                if (BIT.SDS.Util.isInstalled(appName)) {
+                    launchDelay += launchDelayIncrement;
+                    promises.push(BIT.SDS.WindowUtil.getSizeByLaunchingApp(appName, launchDelay));
+                    launchDelayIncrement = 1000;
+                    return;
+                }
+            }, this);
 
-            if (appInstances.length > 0) {
-                windowSize = new BIT.SDS.AppWinSize(appName, appInstances[0].window.getWidth(), appInstances[0].window.getHeight());
-                promises.push(BIT.SDS.Promise.resolve(windowSize));
-                return;
-            }
-
-            if (BIT.SDS.Util.isInstalled(appName)) {
-                launchDelay += launchDelayIncrement;
-                promises.push(BIT.SDS.WindowUtil.getSizeByLaunchingApp(appName, launchDelay));
-                launchDelayIncrement = 1000;
-                return;
-            }
-        }, this);
-
-        rejectAfterTimeoutPromise = new BIT.SDS.Promise(function(resolve, reject) {
-            setTimeout(function() {
-                reject(Error("Operation timed out"));
-            }, launchDelay + 10000);
-        });
-
-        return BIT.SDS.Promise.race([BIT.SDS.Promise.all(promises), rejectAfterTimeoutPromise]);
-    },
-
-    /**
-     * Retrieves the window size(s) of the provided or all application(s). To retrieve the window
-     * sizes, different methods will be applied until the first succeeds:
-     *
-     * * Get the window size from the restore size property
-     * * Get the size from an open window of the respective application
-     * * Launch the application and get the size of the opened window
-     *
-     * Launching the application(s) is an asychronous operation, therefore this method returns a
-     * promise that is fulfilled with an array of the window sizes.
-     *
-     * If you call this method without providing `appNames`, all application window sizes will be
-     * retrieved.
-     *
-     * In addition to {@link getSize}, this method will make several attempts to determine window
-     * sizes and is therefore more robust.
-     *
-     * @param      {string[]|string}  [appNames]  The application name(s).
-     * @return     {BIT.SDS.Promise}  A new promise.
-     */
-    getSizeWithRetry: function(appNames) {
-        if (!appNames) appNames = BIT.SDS.WindowUtil.getAppNames();
-
-        return BIT.SDS.Promise.retry(BIT.SDS.WindowUtil.getSize.createDelegate(this, [appNames]), 5, 5000);
-    },
-
-    /**
-     * Logs the window size(s) of the provided or all application(s) to the console in CSV format.
-     * The record format is: `<application name>,<width>,<height>`
-     *
-     * If you call this method without providing `appNames`, all application window sizes will be
-     * logged.
-     *
-     * @param      {string[]|string}  [appNames]  The application name(s).
-     *
-     * @example
-     * BIT.SDS.WindowUtil.logSize();
-     * // SYNO.SDS.AdminCenter.Application;994;570
-     * // SYNO.SDS.App.FileStation3.Instance;920;560
-     * // ...
-     *
-     * @example
-     * BIT.SDS.WindowUtil.logSize("SYNO.SDS.App.FileStation3.Instance");
-     * // SYNO.SDS.App.FileStation3.Instance;920;560
-     */
-    logSize: function(appNames) {
-        if (!appNames) appNames = BIT.SDS.WindowUtil.getAppNames();
-
-        BIT.SDS.WindowUtil.getSizeWithRetry(appNames)
-            .then(function(results) {
-                Ext.each(results, function(result) {
-                    console.log(this.appName + "," + this.width + "," + this.height);
-                });
-            })
-            .catch(function(reason) {
-                console.log("Error retrieving window size: " + ((reason instanceof Error) ? reason.message : reason));
+            rejectAfterTimeoutPromise = new BIT.SDS.Promise(function(resolve, reject) {
+                setTimeout(function() {
+                    reject(Error("Operation timed out"));
+                }, launchDelay + 10000);
             });
-    },
 
-    /**
-     * Resets the restore size and XY position of the provided application(s).
-     *
-     * If you call this method without providing `appNames`, all application windows will be reset.
-     *
-     * **Note**: Currently open application windows will not change their size and position. You
-     * must close and reopen the windows to see the result. Do not move or resize the application
-     * window beforehand, as this immediately sets the restore size and position to the current
-     * window size and position.
-     *
-     * @param      {string[]|string}  [appNames]  The application name(s).
-     *
-     * @example
-     * BIT.SDS.WindowUtil.resetRestoreSizeAndPosition();
-     * // Resets the window size and position for all applications
-     *
-     * @example
-     * BIT.SDS.WindowUtil.resetRestoreSizeAndPosition("SYNO.SDS.PkgManApp.Instance");
-     * // Resets the window size and position for Package Center
-     *
-     * @example
-     * BIT.SDS.WindowUtil.resetRestoreSizeAndPosition(["SYNO.SDS.PkgManApp.Instance", "SYNO.SDS.HA.Instance"]);
-     * // Resets the window size and position for Package Center and High Availability Manager
-     */
-    resetRestoreSizeAndPosition: function(appNames) {
-        if (!appNames) appNames = BIT.SDS.WindowUtil.getAppNames();
+            return BIT.SDS.Promise.race([BIT.SDS.Promise.all(promises), rejectAfterTimeoutPromise]);
+        },
 
-        Ext.each(appNames, function(appName) {
+        /**
+         * Retrieves the window size(s) of the provided or all application(s). To retrieve the window
+         * sizes, different methods will be applied until the first succeeds:
+         *
+         * * Get the window size from the restore size property
+         * * Get the size from an open window of the respective application
+         * * Launch the application and get the size of the opened window
+         *
+         * Launching the application(s) is an asychronous operation, therefore this method returns a
+         * promise that is fulfilled with an array of the window sizes.
+         *
+         * If you call this method without providing `appNames`, all application window sizes will be
+         * retrieved.
+         *
+         * In addition to {@link getSize}, this method will make several attempts to determine window
+         * sizes and is therefore more robust.
+         *
+         * @param      {string[]|string}  [appNames]  The application name(s).
+         * @return     {BIT.SDS.Promise}  A new promise.
+         */
+        getSizeWithRetry: function(appNames) {
+            if (!appNames) appNames = BIT.SDS.WindowUtil.getAppNames();
+
+            return BIT.SDS.Promise.retry(BIT.SDS.WindowUtil.getSize.createDelegate(this, [appNames]), 5, 5000);
+        },
+
+        /**
+         * Logs the window size(s) of the provided or all application(s) to the console in CSV format.
+         * The record format is: `<application name>,<width>,<height>`
+         *
+         * If you call this method without providing `appNames`, all application window sizes will be
+         * logged.
+         *
+         * @param      {string[]|string}  [appNames]  The application name(s).
+         *
+         * @example
+         * BIT.SDS.WindowUtil.logSize();
+         * // SYNO.SDS.AdminCenter.Application;994;570
+         * // SYNO.SDS.App.FileStation3.Instance;920;560
+         * // ...
+         *
+         * @example
+         * BIT.SDS.WindowUtil.logSize("SYNO.SDS.App.FileStation3.Instance");
+         * // SYNO.SDS.App.FileStation3.Instance;920;560
+         */
+        logSize: function(appNames) {
+            if (!appNames) appNames = BIT.SDS.WindowUtil.getAppNames();
+
+            BIT.SDS.WindowUtil.getSizeWithRetry(appNames)
+                .then(function(results) {
+                    Ext.each(results, function(result) {
+                        console.log(this.appName + "," + this.width + "," + this.height);
+                    });
+                })
+                .catch(function(reason) {
+                    console.log("Error retrieving window size: " + ((reason instanceof Error) ? reason.message : reason));
+                });
+        },
+
+        /**
+         * Resets the restore size and XY position of the provided application(s).
+         *
+         * If you call this method without providing `appNames`, all application windows will be reset.
+         *
+         * **Note**: Currently open application windows will not change their size and position. You
+         * must close and reopen the windows to see the result. Do not move or resize the application
+         * window beforehand, as this immediately sets the restore size and position to the current
+         * window size and position.
+         *
+         * @param      {string[]|string}  [appNames]  The application name(s).
+         *
+         * @example
+         * BIT.SDS.WindowUtil.resetRestoreSizeAndPosition();
+         * // Resets the window size and position for all applications
+         *
+         * @example
+         * BIT.SDS.WindowUtil.resetRestoreSizeAndPosition("SYNO.SDS.PkgManApp.Instance");
+         * // Resets the window size and position for Package Center
+         *
+         * @example
+         * BIT.SDS.WindowUtil.resetRestoreSizeAndPosition(["SYNO.SDS.PkgManApp.Instance", "SYNO.SDS.HA.Instance"]);
+         * // Resets the window size and position for Package Center and High Availability Manager
+         */
+        resetRestoreSizeAndPosition: function(appNames) {
+            if (!appNames) appNames = BIT.SDS.WindowUtil.getAppNames();
+
+            Ext.each(appNames, function(appName) {
+                var restoreSizePosPropertyName = BIT.SDS.WindowUtil.getRestoreSizePosPropertyName(appName);
+
+                SYNO.SDS.UserSettings.removeProperty(appName, restoreSizePosPropertyName);
+            }, this);
+        },
+
+        /**
+         * Sets the restore page XY position of the provided application.
+         *
+         * **Note**: Currently open application windows will not change their position. You must close
+         * and reopen the windows to see the result. Do not move or resize the application window
+         * beforehand, as this immediately sets the restore position to the current window position.
+         *
+         * @param      {string}  appName  The application name.
+         * @param      {number}  x        The page x position.
+         * @param      {number}  y        The page y position.
+         *
+         * @example
+         * BIT.SDS.WindowUtil.setRestorePagePosition("SYNO.SDS.App.FileStation3.Instance", 10, 49);
+         * // Sets the restore page XY position for File Station windows to (10px, 49px)
+         */
+        setRestorePagePosition: function(appName, x, y) {
             var restoreSizePosPropertyName = BIT.SDS.WindowUtil.getRestoreSizePosPropertyName(appName);
+            var restoreSizePos = SYNO.SDS.UserSettings.getProperty(appName, restoreSizePosPropertyName) || {};
 
-            SYNO.SDS.UserSettings.removeProperty(appName, restoreSizePosPropertyName);
-        }, this);
-    },
+            delete restoreSizePos.x;
+            delete restoreSizePos.y;
 
-    /**
-     * Sets the restore page XY position of the provided application.
-     *
-     * **Note**: Currently open application windows will not change their position. You must close
-     * and reopen the windows to see the result. Do not move or resize the application window
-     * beforehand, as this immediately sets the restore position to the current window position.
-     *
-     * @param      {string}  appName  The application name.
-     * @param      {number}  x        The page x position.
-     * @param      {number}  y        The page y position.
-     *
-     * @example
-     * BIT.SDS.WindowUtil.setRestorePagePosition("SYNO.SDS.App.FileStation3.Instance", 10, 49);
-     * // Sets the restore page XY position for File Station windows to (10px, 49px)
-     */
-    setRestorePagePosition: function(appName, x, y) {
-        var restoreSizePosPropertyName = BIT.SDS.WindowUtil.getRestoreSizePosPropertyName(appName);
-        var restoreSizePos = SYNO.SDS.UserSettings.getProperty(appName, restoreSizePosPropertyName) || {};
+            Ext.apply(restoreSizePos, {
+                pageX:       x,
+                pageY:       y,
+                fromRestore: true
+            });
 
-        delete restoreSizePos.x;
-        delete restoreSizePos.y;
+            SYNO.SDS.UserSettings.setProperty(appName, restoreSizePosPropertyName, restoreSizePos);
+        },
 
-        Ext.apply(restoreSizePos, {
-            pageX:       x,
-            pageY:       y,
-            fromRestore: true
-        });
+        /**
+         * Calculates a suggestion for the window area which can be used as input for
+         * {@link cascadeOverlap}. The suggested window area is printed to the console and
+         * returned by this method.
+         *
+         * The suggestion is based on the current size of the browser window, therefore you should
+         * adjust the browser window to your needs before calling this method.
+         *
+         * @return     {BIT.SDS.Rectangle}  The suggested window area.
+         *
+         * @example
+         * BIT.SDS.WindowUtil.suggestWindowArea();
+         * // => {x: 160, y: 139, width: 1640, height: 830}
+         */
+        suggestWindowArea: function() {
+            var x;
+            var y;
+            var width;
+            var height;
+            var windowArea;
+            var windowAreaLiteral;
 
-        SYNO.SDS.UserSettings.setProperty(appName, restoreSizePosPropertyName, restoreSizePos);
-    },
+            var taskbarHeight = Ext.get("sds-taskbar").getHeight();
+            var desktopShortcutsWidth = Ext.select("li.launch-icon").first().getWidth() + (2 * Ext.select("ul.sds-desktop-shortcut").first().getMargins("l"));
 
-    /**
-     * Calculates a suggestion for the window area which can be used as input for
-     * {@link cascadeOverlap}. The suggested window area is printed to the console and
-     * returned by this method.
-     *
-     * The suggestion is based on the current size of the browser window, therefore you should
-     * adjust the browser window to your needs before calling this method.
-     *
-     * @return     {BIT.SDS.Rectangle}  The suggested window area.
-     *
-     * @example
-     * BIT.SDS.WindowUtil.suggestWindowArea();
-     * // => {x: 160, y: 139, width: 1640, height: 830}
-     */
-    suggestWindowArea: function() {
-        var x;
-        var y;
-        var width;
-        var height;
-        var windowArea;
-        var windowAreaLiteral;
+            var marginTopSmall    = 10;
+            var marginRightSmall  = 10;
+            var marginBottomSmall = 10;
+            var marginLeftSmall   = 10;
 
-        var taskbarHeight = Ext.get("sds-taskbar").getHeight();
-        var desktopShortcutsWidth = Ext.select("li.launch-icon").first().getWidth() + (2 * Ext.select("ul.sds-desktop-shortcut").first().getMargins("l"));
+            var marginTopLarge    = 100;
+            var marginRightLarge  = 100;
+            var marginBottomLarge = 100;
+            var marginLeftLarge   = desktopShortcutsWidth - ((desktopShortcutsWidth - 11) % 30) + 29;
 
-        var marginTopSmall    = 10;
-        var marginRightSmall  = 10;
-        var marginBottomSmall = 10;
-        var marginLeftSmall   = 10;
+            var innerWidth  = window.innerWidth  || document.documentElement.clientWidth  || document.body.clientWidth;
+            var innerHeight = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
 
-        var marginTopLarge    = 100;
-        var marginRightLarge  = 100;
-        var marginBottomLarge = 100;
-        var marginLeftLarge   = desktopShortcutsWidth - ((desktopShortcutsWidth - 11) % 30) + 29;
+            innerWidth  -= 16;
+            innerHeight -= 18;
 
-        var innerWidth  = window.innerWidth  || document.documentElement.clientWidth  || document.body.clientWidth;
-        var innerHeight = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
-
-        innerWidth  -= 16;
-        innerHeight -= 18;
-
-        if (innerWidth - marginLeftLarge - marginRightLarge > 1200) {
-            x = marginLeftLarge;
-            width = innerWidth - marginLeftLarge - marginRightLarge;
-        } else {
-            x = marginLeftSmall;
-            width = innerWidth - marginLeftSmall - marginRightSmall;
-        }
-
-        if (innerHeight - taskbarHeight - marginTopLarge - marginBottomLarge > 700) {
-            y = taskbarHeight + marginTopLarge;
-            height = innerHeight - taskbarHeight - marginTopLarge - marginBottomLarge;
-        } else {
-            y = taskbarHeight + marginTopSmall;
-            height = innerHeight - taskbarHeight - marginTopSmall - marginBottomSmall;
-        }
-
-        width  -= width  % 5;
-        height -= height % 5;
-
-        windowArea = new BIT.SDS.Rectangle(x, y, width, height);
-
-        windowAreaLiteral = "{";
-        for (var property in windowArea) {
-            if (windowArea.hasOwnProperty(property)) {
-                windowAreaLiteral += property + ": " + windowArea[property] + ", ";
+            if (innerWidth - marginLeftLarge - marginRightLarge > 1200) {
+                x = marginLeftLarge;
+                width = innerWidth - marginLeftLarge - marginRightLarge;
+            } else {
+                x = marginLeftSmall;
+                width = innerWidth - marginLeftSmall - marginRightSmall;
             }
+
+            if (innerHeight - taskbarHeight - marginTopLarge - marginBottomLarge > 700) {
+                y = taskbarHeight + marginTopLarge;
+                height = innerHeight - taskbarHeight - marginTopLarge - marginBottomLarge;
+            } else {
+                y = taskbarHeight + marginTopSmall;
+                height = innerHeight - taskbarHeight - marginTopSmall - marginBottomSmall;
+            }
+
+            width  -= width  % 5;
+            height -= height % 5;
+
+            windowArea = new BIT.SDS.Rectangle(x, y, width, height);
+
+            windowAreaLiteral = "{";
+            for (var property in windowArea) {
+                if (windowArea.hasOwnProperty(property)) {
+                    windowAreaLiteral += property + ": " + windowArea[property] + ", ";
+                }
+            }
+            windowAreaLiteral = windowAreaLiteral.slice(0, -2) + "}";
+
+            console.log("Using suggested window area: windowArea = " + windowAreaLiteral);
+
+            return windowArea;
+        },
+
+        /**
+         * Translates the passed left/top CSS values for the window into page coordinates. If a provided
+         * value is undefined, the corresponding property in the returned object will also be undefined.
+         *
+         * @param      {Ext.Window}        appWindow  The application window.
+         * @param      {number|undefined}  left       Left CSS value.
+         * @param      {number|undefined}  top        Top CSS value.
+         * @return     {Object}            An object with `x` and `y` properties.
+         *
+         * @example
+         * var appInstances = SYNO.SDS.AppMgr.getByAppName("SYNO.SDS.App.FileStation3.Instance");
+         * if (appInstances.length > 0) {
+         *   var appWindow = appInstances[0].window;
+         *   BIT.SDS.WindowUtil.translateElementPointsToPagePosition(appWindow, 0, 0);
+         * }
+         * // => {x: 0, y: 39}
+         */
+        translateElementPointsToPagePosition: function(appWindow, left, top) {
+            var offset = appWindow.getPositionEl().translatePoints(0, 0);
+            return {
+                x: left - offset.left,
+                y: top  - offset.top
+            };
+        },
+
+        /**
+         * Translates the passed page coordinates into left/top CSS values for the window. If a provided
+         * coordinate is undefined, the corresponding property in the returned object will also be
+         * undefined.
+         *
+         * @param      {Ext.Window}        appWindow  The application window.
+         * @param      {number|undefined}  x          X-coordinate of the upper left egde.
+         * @param      {number|undefined}  y          Y-coordinate of the upper left egde.
+         * @return     {Object}            An object with `left` and `top` properties.
+         *
+         * @example
+         * var appInstances = SYNO.SDS.AppMgr.getByAppName("SYNO.SDS.App.FileStation3.Instance");
+         * if (appInstances.length > 0) {
+         *   var appWindow = appInstances[0].window;
+         *   BIT.SDS.WindowUtil.translatePagePositionToElementPoints(appWindow, 0, 0);
+         * }
+         * // => {left: 0, top: -39}
+         */
+        translatePagePositionToElementPoints: function(appWindow, x, y) {
+            var offset = appWindow.getPositionEl().translatePoints(0, 0);
+            return {
+                left: x + offset.left,
+                top:  y + offset.top
+            };
         }
-        windowAreaLiteral = windowAreaLiteral.slice(0, -2) + "}";
-
-        console.log("Using suggested window area: windowArea = " + windowAreaLiteral);
-
-        return windowArea;
-    },
-
-    /**
-     * Translates the passed left/top CSS values for the window into page coordinates. If a provided
-     * value is undefined, the corresponding property in the returned object will also be undefined.
-     *
-     * @param      {Ext.Window}        appWindow  The application window.
-     * @param      {number|undefined}  left       Left CSS value.
-     * @param      {number|undefined}  top        Top CSS value.
-     * @return     {Object}            An object with `x` and `y` properties.
-     *
-     * @example
-     * var appInstances = SYNO.SDS.AppMgr.getByAppName("SYNO.SDS.App.FileStation3.Instance");
-     * if (appInstances.length > 0) {
-     *   var appWindow = appInstances[0].window;
-     *   BIT.SDS.WindowUtil.translateElementPointsToPagePosition(appWindow, 0, 0);
-     * }
-     * // => {x: 0, y: 39}
-     */
-    translateElementPointsToPagePosition: function(appWindow, left, top) {
-        var offset = appWindow.getPositionEl().translatePoints(0, 0);
-        return {
-            x: left - offset.left,
-            y: top  - offset.top
-        };
-    },
-
-    /**
-     * Translates the passed page coordinates into left/top CSS values for the window. If a provided
-     * coordinate is undefined, the corresponding property in the returned object will also be
-     * undefined.
-     *
-     * @param      {Ext.Window}        appWindow  The application window.
-     * @param      {number|undefined}  x          X-coordinate of the upper left egde.
-     * @param      {number|undefined}  y          Y-coordinate of the upper left egde.
-     * @return     {Object}            An object with `left` and `top` properties.
-     *
-     * @example
-     * var appInstances = SYNO.SDS.AppMgr.getByAppName("SYNO.SDS.App.FileStation3.Instance");
-     * if (appInstances.length > 0) {
-     *   var appWindow = appInstances[0].window;
-     *   BIT.SDS.WindowUtil.translatePagePositionToElementPoints(appWindow, 0, 0);
-     * }
-     * // => {left: 0, top: -39}
-     */
-    translatePagePositionToElementPoints: function(appWindow, x, y) {
-        var offset = appWindow.getPositionEl().translatePoints(0, 0);
-        return {
-            left: x + offset.left,
-            top:  y + offset.top
-        };
     }
 });
-
-BIT.SDS.init();
