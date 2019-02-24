@@ -697,9 +697,9 @@ Ext.define("BIT.SDS.WindowUtil",
             var appNames = [];
             var dsmVersion = BIT.SDS.WindowUtil.getDsmVersion();
 
-            Ext.each(BIT.SDS.WindowUtil.getAllAppData(), function() {
-                if (this.dsmVersions.indexOf(dsmVersion) !== -1) appNames.push(this.appName);
-            });
+            Ext.each(BIT.SDS.WindowUtil.getAllAppData(), function(appData) {
+                if (appData.dsmVersions.indexOf(dsmVersion) !== -1) appNames.push(appData.appName);
+            }, this);
 
             return appNames;
         },
