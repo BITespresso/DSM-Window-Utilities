@@ -869,7 +869,7 @@ Ext.define("BIT.SDS.WindowUtil",
         },
 
         /**
-         * Returns true if the provided application is installed.
+         * Returns `true` if the provided application is currently installed on the DiskStation.
          *
          * @param      {string}   appName  The application name.
          * @return     {boolean}  `true` if installed, `false` otherwise.
