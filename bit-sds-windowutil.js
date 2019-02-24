@@ -719,7 +719,7 @@ Ext.define("BIT.SDS.WindowUtil",
         },
 
         /**
-         * Returns the name of the property, which contains the restore size and position of the
+         * Returns the name of the property that holds the restore size and position of the
          * application window.
          *
          * @param      {string}  appName  The application name.
