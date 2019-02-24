@@ -685,7 +685,7 @@ Ext.define("BIT.SDS.WindowUtil",
 
         /**
          * Returns an array of all applications that can open a window on the DSM desktop and are
-         * available for the DSM version currently installed on DiskStation.
+         * available for the DSM version currently installed on the DiskStation.
          *
          * @return     {string[]}  An array of application names.
          *
@@ -705,8 +705,8 @@ Ext.define("BIT.SDS.WindowUtil",
         },
 
         /**
-         * Returns the DSM version installed on the DiskStation. The version has the format: `<major
-         * version>.<minor version>`
+         * Returns the DSM version currently installed on the DiskStation. The version has the
+         * format: `<major version>.<minor version>`
          *
          * @return     {string}  The DSM version.
          *
@@ -928,7 +928,7 @@ Ext.define("BIT.SDS.WindowUtil",
          *
          * If you call this method without providing `appNames`, all applications that can open a
          * window on the DSM desktop and are available for the DSM version currently installed on
-         * DiskStation will be reset.
+         * the DiskStation will be reset.
          *
          * **Note**: Currently open application windows will not change their size and position. You
          * must close and reopen the windows to see the result. Do not move or resize the
