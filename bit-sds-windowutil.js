@@ -538,9 +538,9 @@ Ext.define("BIT.SDS.WindowUtil",
 
         /**
          * Sets the restore XY position of all applications to cascaded, overlapping positions
-         * determined by the specified window area and resets the restore size. The algorithm used
-         * ensures that each window has a position that depends entirely on the specified window
-         * area, regardless of which applications are installed or which DSM version is used.
+         * determined by the specified bounds and resets the restore size. The algorithm used
+         * ensures that each window has a position that depends entirely on the specified bounds,
+         * regardless of which applications are installed or which DSM version is used.
          *
          * **Note 1**: Currently open application windows will not change their size and position.
          * You must close and reopen the windows to see the result. Do not move or resize the
@@ -552,7 +552,7 @@ Ext.define("BIT.SDS.WindowUtil",
          * DSM. To ensure that this window has the correct size and position, each time this method
          * is called, the window will be opened and set to the correct size and position.
          *
-         * @param      {BIT.SDS.Rectangle}  [windowArea]  The window area.
+         * @param      {BIT.SDS.Rectangle}  [bounds]  The bounds.
          *
          * @example
          * BIT.SDS.WindowUtil.cascadeOverlap();
@@ -560,23 +560,23 @@ Ext.define("BIT.SDS.WindowUtil",
          * @example
          * BIT.SDS.WindowUtil.cascadeOverlap({x: 160, y: 139, width: 1640, height: 830});
          */
-        cascadeOverlap: function(windowArea) {
-            var windowAreaBottomRightCorner;
+        cascadeOverlap: function(bounds) {
+            var boundsBottomRightCorner;
             var offsetX;
             var offsetY;
 
             var dsmVersion = BIT.SDS.WindowUtil.getDsmVersion();
 
-            if (!BIT.SDS.WindowUtil.isRectangle(windowArea)) {
-                windowArea = BIT.SDS.WindowUtil.suggestWindowArea();
+            if (!BIT.SDS.WindowUtil.isRectangle(bounds)) {
+                bounds = BIT.SDS.WindowUtil.suggestBounds();
             }
 
-            offsetX = windowArea.x;
-            offsetY = windowArea.y;
+            offsetX = bounds.x;
+            offsetY = bounds.y;
 
-            windowAreaBottomRightCorner = {
-                x: windowArea.x + windowArea.width,
-                y: windowArea.y + windowArea.height
+            boundsBottomRightCorner = {
+                x: bounds.x + bounds.width,
+                y: bounds.y + bounds.height
             };
 
             Ext.each(BIT.SDS.WindowUtil.getAllAppData(), function(appData) {
@@ -588,36 +588,36 @@ Ext.define("BIT.SDS.WindowUtil",
                     y: offsetY + appData.maxDefaultHeight
                 };
 
-                if (windowBottomRightCorner.x > windowAreaBottomRightCorner.x && windowBottomRightCorner.y > windowAreaBottomRightCorner.y) {
-                    offsetX = windowArea.x;
-                    offsetY = windowArea.y;
+                if (windowBottomRightCorner.x > boundsBottomRightCorner.x && windowBottomRightCorner.y > boundsBottomRightCorner.y) {
+                    offsetX = bounds.x;
+                    offsetY = bounds.y;
                 } else {
-                    if (windowBottomRightCorner.x > windowAreaBottomRightCorner.x) {
-                        if (offsetX === windowArea.x) {
-                            offsetY = windowArea.y;
+                    if (windowBottomRightCorner.x > boundsBottomRightCorner.x) {
+                        if (offsetX === bounds.x) {
+                            offsetY = bounds.y;
                         }
-                        offsetX = windowArea.x;
+                        offsetX = bounds.x;
                     } else {
-                        if (windowBottomRightCorner.y > windowAreaBottomRightCorner.y) {
+                        if (windowBottomRightCorner.y > boundsBottomRightCorner.y) {
                             // offsetX += 30;
-                            offsetY = windowArea.y;
+                            offsetY = bounds.y;
                         }
                     }
                 }
 
-                if (windowBottomRightCorner.x > windowAreaBottomRightCorner.x && windowBottomRightCorner.y > windowAreaBottomRightCorner.y) {
-                    offsetX = windowArea.x;
-                    offsetY = windowArea.y;
+                if (windowBottomRightCorner.x > boundsBottomRightCorner.x && windowBottomRightCorner.y > boundsBottomRightCorner.y) {
+                    offsetX = bounds.x;
+                    offsetY = bounds.y;
                 } else {
-                    if (windowBottomRightCorner.x > windowAreaBottomRightCorner.x) {
-                        if (offsetX === windowArea.x) {
-                            offsetY = windowArea.y;
+                    if (windowBottomRightCorner.x > boundsBottomRightCorner.x) {
+                        if (offsetX === bounds.x) {
+                            offsetY = bounds.y;
                         }
-                        offsetX = windowArea.x;
+                        offsetX = bounds.x;
                     } else {
-                        if (windowBottomRightCorner.y > windowAreaBottomRightCorner.y) {
+                        if (windowBottomRightCorner.y > boundsBottomRightCorner.y) {
                             // offsetX += 30;
-                            offsetY = windowArea.y;
+                            offsetY = bounds.y;
                         }
                     }
                 }
@@ -992,26 +992,26 @@ Ext.define("BIT.SDS.WindowUtil",
         },
 
         /**
-         * Calculates a suggestion for the window area which can be used as input for
-         * {@link cascadeOverlap}. The suggested window area is printed to the console and
+         * Calculates a suggestion for the bounds which can be used as input for
+         * {@link cascadeOverlap}. The suggested bounds are printed to the console and
          * returned by this method.
          *
          * The suggestion is based on the current size of the browser window, therefore you should
          * adjust the browser window to your needs before calling this method.
          *
-         * @return     {BIT.SDS.Rectangle}  The suggested window area.
+         * @return     {BIT.SDS.Rectangle}  The suggested bounds.
          *
          * @example
-         * BIT.SDS.WindowUtil.suggestWindowArea();
+         * BIT.SDS.WindowUtil.suggestBounds();
          * // => {x: 160, y: 139, width: 1640, height: 830}
          */
-        suggestWindowArea: function() {
+        suggestBounds: function() {
             var x;
             var y;
             var width;
             var height;
-            var windowArea;
-            var windowAreaLiteral;
+            var bounds;
+            var boundsLiteral;
 
             var taskbarHeight = Ext.get("sds-taskbar").getHeight();
             var desktopShortcutsWidth = Ext.select("li.launch-icon").first().getWidth() + (2 * Ext.select("ul.sds-desktop-shortcut").first().getMargins("l"));
@@ -1051,19 +1051,19 @@ Ext.define("BIT.SDS.WindowUtil",
             width  -= width  % 5;
             height -= height % 5;
 
-            windowArea = new BIT.SDS.Rectangle(x, y, width, height);
+            bounds = new BIT.SDS.Rectangle(x, y, width, height);
 
-            windowAreaLiteral = "{";
-            for (var property in windowArea) {
-                if (windowArea.hasOwnProperty(property)) {
-                    windowAreaLiteral += property + ": " + windowArea[property] + ", ";
+            boundsLiteral = "{";
+            for (var property in bounds) {
+                if (bounds.hasOwnProperty(property)) {
+                    boundsLiteral += property + ": " + bounds[property] + ", ";
                 }
             }
-            windowAreaLiteral = windowAreaLiteral.slice(0, -2) + "}";
+            boundsLiteral = boundsLiteral.slice(0, -2) + "}";
 
-            console.log("Using suggested window area: windowArea = " + windowAreaLiteral);
+            console.log("Using suggested bounds: bounds = " + boundsLiteral);
 
-            return windowArea;
+            return bounds;
         }
     }
 });
