@@ -538,9 +538,10 @@ Ext.define("BIT.SDS.WindowUtil",
 
         /**
          * Sets the restore XY position of all applications to cascaded, overlapping positions
-         * determined by the specified bounds and resets the restore size. The algorithm used
-         * ensures that each window has a position that depends entirely on the specified bounds,
-         * regardless of which applications are installed or which DSM version is used.
+         * within the specified bounds and resets the restore size so that the windows will have
+         * their respective default sizes. The algorithm used ensures that each window has a
+         * position that depends entirely on the specified bounds, regardless of which applications
+         * are installed or which DSM version is used.
          *
          * **Note 1**: Currently open application windows will not change their size and position.
          * You must close and reopen the windows to see the result. Do not move or resize the
