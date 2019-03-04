@@ -742,131 +742,113 @@ Ext.define("BIT.SDS.WindowUtil",
         },
 
         /**
-         * Retrieves the window size of the provided application by launching the application. If
-         * the application window is already open, the current size of this window is returned.
+         * An object containing the size of an application window.
          *
-         * The application will be launched after a delay specified in milliseconds.
-         *
-         * Launching the application is an asychronous operation, therefore this method returns a
-         * promise that is fulfilled with the window size.
-         *
-         * @param      {string}           appName      The application name.
-         * @param      {number}           launchDelay  The launch delay.
-         * @return     {BIT.SDS.Promise}  A new promise.
+         * @typedef    {Object}  BIT.SDS.WindowUtil~AppWinSize
+         * @property   {string}  appName  The application name.
+         * @property   {number}  width    The window width.
+         * @property   {number}  height   The window height.
          */
-        getSizeByLaunchingApp: function(appName, launchDelay) {
-            return new BIT.SDS.Promise(function(resolve, reject) {
-                SYNO.SDS.AppLaunch.defer(launchDelay, this, [appName, {}, false, function(appInstance) {
-                    var appWinSize;
-                    var appInstances;
-
-                    if (Ext.isObject(appInstance)) {
-                        appWinSize = new BIT.SDS.AppWinSize(appName, appInstance.window.getWidth(), appInstance.window.getHeight());
-                        resolve(appWinSize);
-                    } else {
-                        appInstances = SYNO.SDS.AppMgr.getByAppName(appName);
-
-                        if (appInstances.length > 0) {
-                            appWinSize = new BIT.SDS.AppWinSize(appName, appInstances[0].window.getWidth(), appInstances[0].window.getHeight());
-                            resolve(appWinSize);
-                        } else {
-                            reject(Error("Failed to launch " + appName));
-                        }
-                    }
-                }, this]);
-            });
-        },
 
         /**
-         * Retrieves the window size(s) of the provided or all application(s). To retrieve the
-         * window sizes, different methods will be applied until the first succeeds:
+         * Retrieves the respective default window size(s) of the provided or all application(s).
          *
-         * * Get the window size from the restore size property
-         * * Get the size from an open window of the respective application
-         * * Launch the application and get the size of the opened window
+         * To get the default window size, first the restore size and XY position are reset via
+         * {@link resetRestoreSizeAndPosition}, next the application is launched and finally the
+         * size of the newly opened application window is retrieved.
+         *
+         * Therefore please note:
+         *
+         *  * The default window size can only be retrieved for currently installed applications.
+         *  * The applications must not be running before calling this method.
+         *  * The current restore size and XY position will be reset for those applications.
          *
          * Launching the application(s) is an asychronous operation, therefore this method returns a
-         * promise that is fulfilled with an array of the window sizes.
+         * promise that is fulfilled with an array of {@link BIT.SDS.WindowUtil~AppWinSize} objects.
          *
-         * If you call this method without providing `appNames`, the window sizes of all
+         * If you call this method without providing `appNames`, the default window sizes of all
          * applications that can open a window on the DSM desktop and are currently installed on the
          * DiskStation will be retrieved.
          *
          * @param      {string[]|string}  [appNames]  The application name(s).
-         * @return     {BIT.SDS.Promise}  A new promise.
+         * @return     {BIT.SDS.Promise}  A promise for an array of `AppWinSize` objects.
          */
-        getSize: function(appNames) {
-            var rejectAfterTimeoutPromise;
-            var promises = [];
-            var launchDelay = 0;
-            var launchDelayIncrement = 0;
+        getDefaultSize: function(appNames) {
+            var appNamesForLaunch = [];
 
             if (!appNames) appNames = BIT.SDS.WindowUtil.getAppNamesForDsmVersion();
 
             Ext.each(appNames, function(appName) {
-                var restoreSizePosPropertyName = BIT.SDS.WindowUtil.getRestoreSizePosPropertyName(appName);
-                var restoreSizePos = SYNO.SDS.UserSettings.getProperty(appName, restoreSizePosPropertyName);
-                var appInstances;
-                var appWinSize;
-
-                if (restoreSizePos) {
-                    if (Ext.isDefined(restoreSizePos.width) && Ext.isDefined(restoreSizePos.height)) {
-                        appWinSize = new BIT.SDS.AppWinSize(appName, restoreSizePos.width, restoreSizePos.height);
-                        promises.push(BIT.SDS.Promise.resolve(appWinSize));
-                        return;
-                    }
-                }
-
-                appInstances = SYNO.SDS.AppMgr.getByAppName(appName);
-
-                if (appInstances.length > 0) {
-                    appWinSize = new BIT.SDS.AppWinSize(appName, appInstances[0].window.getWidth(), appInstances[0].window.getHeight());
-                    promises.push(BIT.SDS.Promise.resolve(appWinSize));
-                    return;
-                }
-
-                if (BIT.SDS.WindowUtil.isInstalled(appName)) {
-                    launchDelay += launchDelayIncrement;
-                    promises.push(BIT.SDS.WindowUtil.getSizeByLaunchingApp(appName, launchDelay));
-                    launchDelayIncrement = 1000;
-                    return;
+                if (BIT.SDS.WindowUtil.isInstalled(appName) && (SYNO.SDS.AppMgr.getByAppName(appName).length === 0)) {
+                    appNamesForLaunch.push(appName);
                 }
             }, this);
 
-            rejectAfterTimeoutPromise = new BIT.SDS.Promise(function(resolve, reject) {
-                setTimeout(function() {
-                    reject(Error("Operation timed out"));
-                }, launchDelay + 10000);
-            });
+            function getAppWinSize(appInstance) {
+                var appWindow = appInstance.window;
+                var windowSize = {};
 
-            return BIT.SDS.Promise.race([BIT.SDS.Promise.all(promises), rejectAfterTimeoutPromise]);
-        },
+                if (appWindow.maximized || appWindow.hidden) {
+                    if (appWindow.restoreSize) {
+                        windowSize.width = appWindow.restoreSize.width;
+                        windowSize.height = appWindow.restoreSize.height
+                    } else {
+                        windowSize.width = appWindow.width;
+                        windowSize.height = appWindow.height
+                    }
+                } else {
+                    windowSize.width = appWindow.getWidth();
+                    windowSize.height = appWindow.getHeight()
+                }
 
-        /**
-         * Retrieves the window size(s) of the provided or all application(s). To retrieve the
-         * window sizes, different methods will be applied until the first succeeds:
-         *
-         * * Get the window size from the restore size property
-         * * Get the size from an open window of the respective application
-         * * Launch the application and get the size of the opened window
-         *
-         * Launching the application(s) is an asychronous operation, therefore this method returns a
-         * promise that is fulfilled with an array of the window sizes.
-         *
-         * If you call this method without providing `appNames`, the window sizes of all
-         * applications that can open a window on the DSM desktop and are currently installed on the
-         * DiskStation will be retrieved.
-         *
-         * In addition to {@link getSize}, this method will make several attempts to determine
-         * window sizes and is therefore more robust.
-         *
-         * @param      {string[]|string}  [appNames]  The application name(s).
-         * @return     {BIT.SDS.Promise}  A new promise.
-         */
-        getSizeWithRetry: function(appNames) {
-            if (!appNames) appNames = BIT.SDS.WindowUtil.getAppNamesForDsmVersion();
+                return {
+                    appName: appInstance.jsConfig.jsID,
+                    width:   windowSize.width,
+                    height:  windowSize.height
+                };
+            }
 
-            return BIT.SDS.Promise.retry(BIT.SDS.WindowUtil.getSize.createDelegate(this, [appNames]), 5, 5000);
+            function getSizeAfterAppLaunch(appName, launchDelay) {
+                return new BIT.SDS.Promise(function(resolve, reject) {
+                    SYNO.SDS.AppLaunch.defer(launchDelay, this, [appName, {}, false, function(appInstance) {
+                        var appInstances = SYNO.SDS.AppMgr.getByAppName(appName);
+
+                        if (appInstances.length > 0) {
+                            resolve(getAppWinSize(appInstances[0]));
+                        } else {
+                            reject(Error("Failed to launch " + appName));
+                        }
+                    }, this]);
+                });
+            }
+
+            return BIT.SDS.Promise.retry((function(appNamesForLaunch) {
+                var rejectAfterTimeoutPromise;
+                var promises = [];
+                var launchDelay = 0;
+                var launchDelayIncrement = 0;
+
+                Ext.each(appNamesForLaunch, function(appName) {
+                    var appInstances = SYNO.SDS.AppMgr.getByAppName(appName);
+
+                    if (BIT.SDS.WindowUtil.isInstalled(appName) && (appInstances.length === 0)) {
+                        BIT.SDS.WindowUtil.resetRestoreSizeAndPosition(appName);
+                        launchDelay += launchDelayIncrement;
+                        promises.push(getSizeAfterAppLaunch(appName, launchDelay));
+                        launchDelayIncrement = 1000;
+                    } else if (appInstances.length > 0) {
+                        promises.push(BIT.SDS.Promise.resolve(getAppWinSize(appInstances[0])));
+                    }
+                }, this);
+
+                rejectAfterTimeoutPromise = new BIT.SDS.Promise(function(resolve, reject) {
+                    setTimeout(function() {
+                        reject(Error("Operation timed out"));
+                    }, launchDelay + 10000);
+                });
+
+                return BIT.SDS.Promise.race([BIT.SDS.Promise.all(promises), rejectAfterTimeoutPromise]);
+            }).createDelegate(this, [appNamesForLaunch]), 5, 5000);
         },
 
         /**
@@ -913,7 +895,7 @@ Ext.define("BIT.SDS.WindowUtil",
         logSize: function(appNames) {
             if (!appNames) appNames = BIT.SDS.WindowUtil.getAppNamesForDsmVersion();
 
-            BIT.SDS.WindowUtil.getSizeWithRetry(appNames)
+            BIT.SDS.WindowUtil.getDefaultSize(appNames)
                 .then(function(results) {
                     Ext.each(results, function(result) {
                         console.log(this.appName + "," + this.width + "," + this.height);
