@@ -10,48 +10,6 @@ Ext.namespace("BIT");
  */
 Ext.namespace("BIT.SDS");
 
-Ext.namespace("BIT.SDS.AppWinSize");
-
-Ext.define("BIT.SDS.AppWinSize",
-/**
- * @lends      BIT.SDS.AppWinSize.prototype
- */
-{
-    /**
-     * The application name.
-     * @type       {string}
-     */
-    appName: undefined,
-
-    /**
-     * The window width.
-     * @type       {number}
-     */
-    width: undefined,
-
-    /**
-     * The window height.
-     * @type       {number}
-     */
-    height: undefined,
-
-    /**
-     * Creates a new {@link BIT.SDS.AppWinSize} instance.
-     *
-     * @method     BIT.SDS.AppWinSize
-     * @constructs
-     *
-     * @param      {string}  appName  The application name.
-     * @param      {number}  width    The window width.
-     * @param      {number}  height   The window height.
-     */
-    constructor: function(appName, width, height) {
-        this.appName = appName;
-        this.width   = width;
-        this.height  = height;
-    }
-});
-
 Ext.namespace("BIT.SDS.Promise");
 
 Ext.define("BIT.SDS.Promise",
