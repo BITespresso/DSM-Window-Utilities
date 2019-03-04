@@ -158,12 +158,14 @@ Ext.define("BIT.SDS.Promise",
          * @return     {BIT.SDS.Promise}  A new promise.
          *
          * @example
-         * var trySomething = function() {
-         *   var resolver = function(resolve, reject) {
+         * function trySomething() {
+         *   function resolver(resolve, reject) {
          *     ... // Try to resolve promise
-         *   };
+         *   }
+         *
          *   return new BIT.SDS.Promise(resolver);
-         * };
+         * }
+         *
          * BIT.SDS.Promise.retry(trySomething, 5, 5000)
          *   .then(...)
          *   .catch(...);
@@ -171,7 +173,8 @@ Ext.define("BIT.SDS.Promise",
         retry: function(fn, times, delay) {
             return new BIT.SDS.Promise(function(resolve, reject) {
                 var lastRejectReason;
-                var retry = function() {
+
+                function retry() {
                     if (times > 0) {
                         times--;
                         fn()
@@ -183,7 +186,8 @@ Ext.define("BIT.SDS.Promise",
                     } else {
                         reject(lastRejectReason);
                     }
-                };
+                }
+
                 retry();
             });
         }
