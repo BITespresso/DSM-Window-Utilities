@@ -785,26 +785,26 @@ Ext.define("BIT.SDS.WindowUtil",
         },
 
         /**
-         * Logs the window size(s) of the provided or all application(s) to the console in CSV
-         * format. The record format is: `<application name>,<width>,<height>`
+         * Logs the respective default window size(s) of the provided or all application(s) to the
+         * console in CSV format. The record format is: `<application name>,<width>,<height>`
          *
-         * If you call this method without providing `appNames`, the window sizes of all
+         * If you call this method without providing `appNames`, the default window sizes of all
          * applications that can open a window on the DSM desktop and are currently installed on the
          * DiskStation will be logged.
          *
          * @param      {string[]|string}  [appNames]  The application name(s).
          *
          * @example
-         * BIT.SDS.WindowUtil.logSize();
+         * BIT.SDS.WindowUtil.logDefaultSize();
          * // SYNO.SDS.AdminCenter.Application;994;570
          * // SYNO.SDS.App.FileStation3.Instance;920;560
          * // ...
          *
          * @example
-         * BIT.SDS.WindowUtil.logSize("SYNO.SDS.App.FileStation3.Instance");
+         * BIT.SDS.WindowUtil.logDefaultSize("SYNO.SDS.App.FileStation3.Instance");
          * // SYNO.SDS.App.FileStation3.Instance;920;560
          */
-        logSize: function(appNames) {
+        logDefaultSize: function(appNames) {
             if (!appNames) appNames = BIT.SDS.WindowUtil.getAppNamesForDsmVersion();
 
             BIT.SDS.WindowUtil.getDefaultSize(appNames)
