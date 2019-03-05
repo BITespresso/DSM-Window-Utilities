@@ -364,56 +364,6 @@ Ext.define("BIT.SDS.Promise",
     }
 });
 
-Ext.namespace("BIT.SDS.Rectangle");
-
-Ext.define("BIT.SDS.Rectangle",
-/**
- * @lends      BIT.SDS.Rectangle.prototype
- */
-{
-    /**
-     * The x-coordinate of the upper left egde.
-     * @type       {number}
-     */
-    x: undefined,
-
-    /**
-     * The y-coordinate of the upper left egde.
-     * @type       {number}
-     */
-    y: undefined,
-
-    /**
-     * The width of the rectangle.
-     * @type       {number}
-     */
-    width: undefined,
-
-    /**
-     * The height of the rectangle.
-     * @type       {number}
-     */
-    height: undefined,
-
-    /**
-     * Creates a new {@link BIT.SDS.Rectangle} instance.
-     *
-     * @method     BIT.SDS.Rectangle
-     * @constructs
-     *
-     * @param      {number}  x       X-coordinate of the upper left egde.
-     * @param      {number}  y       Y-coordinate of the upper left egde.
-     * @param      {number}  width   The rectangle width.
-     * @param      {number}  height  The rectangle height.
-     */
-    constructor: function(x, y, width, height) {
-        this.x      = x;
-        this.y      = y;
-        this.width  = width;
-        this.height = height;
-    }
-});
-
 Ext.namespace("BIT.SDS.WindowUtil");
 
 /**
@@ -515,7 +465,7 @@ Ext.define("BIT.SDS.WindowUtil",
          * DSM. To ensure that this window has the correct size and position, each time this method
          * is called, the window will be opened and set to the correct size and position.
          *
-         * @param      {BIT.SDS.Rectangle}  [bounds]  The bounds.
+         * @param      {BIT.SDS.WindowUtil~Bounds}  [bounds]  The bounds.
          *
          * @example
          * BIT.SDS.WindowUtil.cascadeOverlap();
@@ -530,7 +480,7 @@ Ext.define("BIT.SDS.WindowUtil",
 
             var dsmVersion = BIT.SDS.WindowUtil.getDsmVersion();
 
-            if (!BIT.SDS.WindowUtil.isRectangle(bounds)) {
+            if (!BIT.SDS.WindowUtil.isBounds(bounds)) {
                 bounds = BIT.SDS.WindowUtil.suggestBounds();
             }
 
@@ -814,6 +764,17 @@ Ext.define("BIT.SDS.WindowUtil",
         },
 
         /**
+         * Returns true if the passed object has the properties of a
+         * {@link BIT.SDS.WindowUtil~Bounds} object and these are all of type `number`.
+         *
+         * @param      {Object}   object  The object.
+         * @return     {boolean}  `true` if bounds, `false` otherwise.
+         */
+        isBounds: function(object) {
+            return Ext.isObject(object) && Ext.isNumber(object.x) && Ext.isNumber(object.y) && Ext.isNumber(object.width) && Ext.isNumber(object.height);
+        },
+
+        /**
          * Returns `true` if the provided application is currently installed on the DiskStation.
          *
          * @param      {string}   appName  The application name.
@@ -821,17 +782,6 @@ Ext.define("BIT.SDS.WindowUtil",
          */
         isInstalled: function(appName) {
             return (SYNO.SDS.AppUtil.getApps().indexOf(appName) !== -1);
-        },
-
-        /**
-         * Returns true if the passed object has the properties of a {@link BIT.SDS.Rectangle} and
-         * these are all of type `number`.
-         *
-         * @param      {Object}   object  The object.
-         * @return     {boolean}  `true` if rectangle, `false` otherwise.
-         */
-        isRectangle: function(object) {
-            return Ext.isObject(object) && Ext.isNumber(object.x) && Ext.isNumber(object.y) && Ext.isNumber(object.width) && Ext.isNumber(object.height);
         },
 
         /**
@@ -937,6 +887,16 @@ Ext.define("BIT.SDS.WindowUtil",
         },
 
         /**
+         * A rectangle defining the bounds for the position of the application windows.
+         *
+         * @typedef    {Object}  BIT.SDS.WindowUtil~Bounds
+         * @property   {number}  x       The bounds page x position.
+         * @property   {number}  y       The bounds page y position.
+         * @property   {number}  width   The bounds width.
+         * @property   {number}  height  The bounds height.
+         */
+
+        /**
          * Calculates a suggestion for the bounds which can be used as input for
          * {@link cascadeOverlap}. The suggested bounds are printed to the console and
          * returned by this method.
@@ -944,7 +904,7 @@ Ext.define("BIT.SDS.WindowUtil",
          * The suggestion is based on the current size of the browser window, therefore you should
          * adjust the browser window to your needs before calling this method.
          *
-         * @return     {BIT.SDS.Rectangle}  The suggested bounds.
+         * @return     {BIT.SDS.WindowUtil~Bounds}  The suggested bounds.
          *
          * @example
          * BIT.SDS.WindowUtil.suggestBounds();
@@ -996,7 +956,12 @@ Ext.define("BIT.SDS.WindowUtil",
             width  -= width  % 5;
             height -= height % 5;
 
-            bounds = new BIT.SDS.Rectangle(x, y, width, height);
+            bounds = {
+                x:      x,
+                y:      y,
+                width:  width,
+                height: height
+            };
 
             boundsLiteral = "{";
             for (var property in bounds) {
