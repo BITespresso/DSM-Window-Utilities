@@ -702,15 +702,15 @@ Ext.define("BIT.SDS.WindowUtil",
 
                 if (appWindow.maximized || appWindow.hidden) {
                     if (appWindow.restoreSize) {
-                        windowSize.width = appWindow.restoreSize.width;
-                        windowSize.height = appWindow.restoreSize.height
+                        windowSize.width  = appWindow.restoreSize.width;
+                        windowSize.height = appWindow.restoreSize.height;
                     } else {
-                        windowSize.width = appWindow.width;
-                        windowSize.height = appWindow.height
+                        windowSize.width  = appWindow.width;
+                        windowSize.height = appWindow.height;
                     }
                 } else {
-                    windowSize.width = appWindow.getWidth();
-                    windowSize.height = appWindow.getHeight()
+                    windowSize.width  = appWindow.getWidth();
+                    windowSize.height = appWindow.getHeight();
                 }
 
                 return {
