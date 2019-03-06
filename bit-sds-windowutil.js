@@ -898,8 +898,7 @@ Ext.define("BIT.SDS.WindowUtil",
 
         /**
          * Calculates a suggestion for the bounds which can be used as input for
-         * {@link cascadeOverlap}. The suggested bounds are printed to the console and
-         * returned by this method.
+         * {@link cascadeOverlap}.
          *
          * The suggestion is based on the current size of the browser window, therefore you should
          * adjust the browser window to your needs before calling this method.
@@ -915,8 +914,6 @@ Ext.define("BIT.SDS.WindowUtil",
             var y;
             var width;
             var height;
-            var bounds;
-            var boundsLiteral;
 
             var taskbarHeight = Ext.get("sds-taskbar").getHeight();
             var desktopShortcutsWidth = Ext.select("li.launch-icon").first().getWidth() + (2 * Ext.select("ul.sds-desktop-shortcut").first().getMargins("l"));
@@ -956,24 +953,12 @@ Ext.define("BIT.SDS.WindowUtil",
             width  -= width  % 5;
             height -= height % 5;
 
-            bounds = {
+            return {
                 x:      x,
                 y:      y,
                 width:  width,
                 height: height
             };
-
-            boundsLiteral = "{";
-            for (var property in bounds) {
-                if (bounds.hasOwnProperty(property)) {
-                    boundsLiteral += property + ": " + bounds[property] + ", ";
-                }
-            }
-            boundsLiteral = boundsLiteral.slice(0, -2) + "}";
-
-            console.log("Using suggested bounds: bounds = " + boundsLiteral);
-
-            return bounds;
         }
     }
 });
