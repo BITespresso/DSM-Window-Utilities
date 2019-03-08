@@ -698,26 +698,24 @@ Ext.define("BIT.SDS.WindowUtil",
 
             function getAppWinSize(appInstance) {
                 var appWindow = appInstance.window;
-                var windowSize = {};
+                var appWinSize = {
+                    appName: appInstance.jsConfig.jsID,
+                };
 
                 if (appWindow.maximized || appWindow.hidden) {
                     if (appWindow.restoreSize) {
-                        windowSize.width  = appWindow.restoreSize.width;
-                        windowSize.height = appWindow.restoreSize.height;
+                        appWinSize.width  = appWindow.restoreSize.width;
+                        appWinSize.height = appWindow.restoreSize.height;
                     } else {
-                        windowSize.width  = appWindow.width;
-                        windowSize.height = appWindow.height;
+                        appWinSize.width  = appWindow.width;
+                        appWinSize.height = appWindow.height;
                     }
                 } else {
-                    windowSize.width  = appWindow.getWidth();
-                    windowSize.height = appWindow.getHeight();
+                    appWinSize.width  = appWindow.getWidth();
+                    appWinSize.height = appWindow.getHeight();
                 }
 
-                return {
-                    appName: appInstance.jsConfig.jsID,
-                    width:   windowSize.width,
-                    height:  windowSize.height
-                };
+                return appWinSize;
             }
 
             function getSizeAfterAppLaunch(appName, launchDelay) {
