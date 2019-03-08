@@ -908,10 +908,7 @@ Ext.define("BIT.SDS.WindowUtil",
          * // => {x: 160, y: 139, width: 1640, height: 830}
          */
         suggestBounds: function() {
-            var x;
-            var y;
-            var width;
-            var height;
+            var bounds = {};
 
             var taskbarHeight = Ext.get("sds-taskbar").getHeight();
             var desktopShortcutsWidth = Ext.select("li.launch-icon").first().getWidth() + (2 * Ext.select("ul.sds-desktop-shortcut").first().getMargins("l"));
@@ -932,31 +929,22 @@ Ext.define("BIT.SDS.WindowUtil",
             innerWidth  -= 16;
             innerHeight -= 18;
 
-            if (innerWidth - marginLeftLarge - marginRightLarge > 1200) {
-                x = marginLeftLarge;
-                width = innerWidth - marginLeftLarge - marginRightLarge;
+            if ((innerWidth - marginLeftLarge - marginRightLarge > 1200) && (innerHeight - marginTopLarge - marginBottomLarge - taskbarHeight > 700)) {
+                bounds.x      = marginLeftLarge;
+                bounds.y      = marginTopLarge + taskbarHeight;
+                bounds.width  = innerWidth  - marginLeftLarge - marginRightLarge;
+                bounds.height = innerHeight - marginTopLarge  - marginBottomLarge - taskbarHeight;
             } else {
-                x = marginLeftSmall;
-                width = innerWidth - marginLeftSmall - marginRightSmall;
+                bounds.x      = marginLeftSmall;
+                bounds.y      = marginTopSmall + taskbarHeight;
+                bounds.width  = innerWidth  - marginLeftSmall - marginRightSmall;
+                bounds.height = innerHeight - marginTopSmall  - marginBottomSmall - taskbarHeight;
             }
 
-            if (innerHeight - taskbarHeight - marginTopLarge - marginBottomLarge > 700) {
-                y = taskbarHeight + marginTopLarge;
-                height = innerHeight - taskbarHeight - marginTopLarge - marginBottomLarge;
-            } else {
-                y = taskbarHeight + marginTopSmall;
-                height = innerHeight - taskbarHeight - marginTopSmall - marginBottomSmall;
-            }
+            bounds.width  -= bounds.width  % 5;
+            bounds.height -= bounds.height % 5;
 
-            width  -= width  % 5;
-            height -= height % 5;
-
-            return {
-                x:      x,
-                y:      y,
-                width:  width,
-                height: height
-            };
+            return bounds;
         }
     }
 });
