@@ -451,9 +451,14 @@ Ext.define("BIT.SDS.WindowUtil",
         /**
          * Sets the restore XY position of all applications to cascaded, overlapping positions
          * within the specified bounds and resets the restore size so that the windows will have
-         * their respective default sizes. The algorithm used ensures that each window has a
-         * position that depends entirely on the specified bounds, regardless of which applications
-         * are installed or which DSM version is used.
+         * their respective default sizes.
+         *
+         * The algorithm used ensures that each window has a position that depends entirely on the
+         * specified bounds, regardless of which applications are installed or which DSM version is
+         * used.
+         *
+         * The method call including the parameters used is logged in the console. Please note this
+         * down for your later information.
          *
          * **Note 1**: Currently open application windows will not change their size and position.
          * You must close and reopen the windows to see the result. Do not move or resize the
@@ -474,15 +479,22 @@ Ext.define("BIT.SDS.WindowUtil",
          * BIT.SDS.WindowUtil.cascadeOverlap({x: 160, y: 139, width: 1640, height: 830});
          */
         cascadeOverlap: function(bounds) {
+            var boundsAsLiteral;
             var boundsBottomRightCorner;
             var offsetX;
             var offsetY;
 
             var dsmVersion = BIT.SDS.WindowUtil.getDsmVersion();
 
-            if (!BIT.SDS.WindowUtil.isBounds(bounds)) {
-                bounds = BIT.SDS.WindowUtil.suggestBounds();
+            function isValidBounds(bounds) {
+                return Ext.isObject(bounds) && Ext.isNumber(bounds.x) && Ext.isNumber(bounds.y) && Ext.isNumber(bounds.width) && Ext.isNumber(bounds.height);
             }
+
+            if (!isValidBounds(bounds)) bounds = BIT.SDS.WindowUtil.suggestBounds();
+
+            boundsAsLiteral = "{x: " + bounds.x + ", y: " + bounds.y + ", width: " + bounds.width + ", height: " + bounds.height + "}";
+
+            console.log("Using: BIT.SDS.WindowUtil.cascadeOverlap(" + boundsAsLiteral + ");");
 
             offsetX = bounds.x;
             offsetY = bounds.y;
