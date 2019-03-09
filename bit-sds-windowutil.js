@@ -774,17 +774,6 @@ Ext.define("BIT.SDS.WindowUtil",
         },
 
         /**
-         * Returns true if the passed object has the properties of a
-         * {@link BIT.SDS.WindowUtil~Bounds} object and these are all of type `number`.
-         *
-         * @param      {Object}   object  The object.
-         * @return     {boolean}  `true` if bounds, `false` otherwise.
-         */
-        isBounds: function(object) {
-            return Ext.isObject(object) && Ext.isNumber(object.x) && Ext.isNumber(object.y) && Ext.isNumber(object.width) && Ext.isNumber(object.height);
-        },
-
-        /**
          * Returns `true` if the provided application is currently installed on the DiskStation.
          *
          * @param      {string}   appName  The application name.
