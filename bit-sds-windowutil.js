@@ -609,6 +609,25 @@ Ext.define("BIT.SDS.WindowUtil",
         },
 
         /**
+         * Returns an array of all applications that can open a window on the DSM desktop.
+         *
+         * @return     {string[]}  An array of application names.
+         *
+         * @example
+         * BIT.SDS.WindowUtil.getAppNames();
+         * // => ["SYNO.SDS.AdminCenter.Application", ...]
+         */
+        getAppNames: function() {
+            var appNames = [];
+
+            Ext.each(BIT.SDS.WindowUtil.getAllAppData(), function(appData) {
+                appNames.push(appData.appName);
+            }, this);
+
+            return appNames;
+        },
+
+        /**
          * Returns an array of all applications that can open a window on the DSM desktop and are
          * available for the DSM version currently installed on the DiskStation.
          *
