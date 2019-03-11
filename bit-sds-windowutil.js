@@ -486,11 +486,7 @@ Ext.define("BIT.SDS.WindowUtil",
 
             var dsmVersion = BIT.SDS.WindowUtil.getDsmVersion();
 
-            function isValidBounds(bounds) {
-                return Ext.isObject(bounds) && Ext.isNumber(bounds.x) && Ext.isNumber(bounds.y) && Ext.isNumber(bounds.width) && Ext.isNumber(bounds.height);
-            }
-
-            if (!isValidBounds(bounds)) bounds = BIT.SDS.WindowUtil.suggestBounds();
+            if (bounds === undefined) bounds = BIT.SDS.WindowUtil.suggestBounds();
 
             boundsAsLiteral = "{x: " + bounds.x + ", y: " + bounds.y + ", width: " + bounds.width + ", height: " + bounds.height + "}";
 
@@ -719,10 +715,10 @@ Ext.define("BIT.SDS.WindowUtil",
         getDefaultSize: function(appNames) {
             var appNamesForLaunch = [];
 
-            if (!appNames) appNames = BIT.SDS.WindowUtil.getAppNamesForDsmVersion();
+            if (appNames === undefined) appNames = BIT.SDS.WindowUtil.getAppNamesForDsmVersion();
 
             Ext.each(appNames, function(appName) {
-                if (BIT.SDS.WindowUtil.isInstalled(appName) && (SYNO.SDS.AppMgr.getByAppName(appName).length === 0)) {
+                if ((BIT.SDS.WindowUtil.getAppNamesForDsmVersion().indexOf(appName) !== -1) && BIT.SDS.WindowUtil.isInstalled(appName) && (SYNO.SDS.AppMgr.getByAppName(appName).length === 0)) {
                     appNamesForLaunch.push(appName);
                 }
             }, this);
@@ -823,8 +819,6 @@ Ext.define("BIT.SDS.WindowUtil",
          * // SYNO.SDS.App.FileStation3.Instance;920;560
          */
         logDefaultSize: function(appNames) {
-            if (!appNames) appNames = BIT.SDS.WindowUtil.getAppNamesForDsmVersion();
-
             BIT.SDS.WindowUtil.getDefaultSize(appNames)
                 .then(function(results) {
                     Ext.each(results, function(result) {
@@ -863,12 +857,15 @@ Ext.define("BIT.SDS.WindowUtil",
          * // Resets the window size and position for Package Center and High Availability Manager
          */
         resetRestoreSizeAndPosition: function(appNames) {
-            if (!appNames) appNames = BIT.SDS.WindowUtil.getAppNamesForDsmVersion();
+            if (appNames === undefined) appNames = BIT.SDS.WindowUtil.getAppNamesForDsmVersion();
 
             Ext.each(appNames, function(appName) {
-                var restoreSizePosPropertyName = BIT.SDS.WindowUtil.getRestoreSizePosPropertyName(appName);
+                var restoreSizePosPropertyName;
 
-                SYNO.SDS.UserSettings.removeProperty(appName, restoreSizePosPropertyName);
+                if (BIT.SDS.WindowUtil.getAppNamesForDsmVersion().indexOf(appName) !== -1) {
+                    restoreSizePosPropertyName = BIT.SDS.WindowUtil.getRestoreSizePosPropertyName(appName);
+                    SYNO.SDS.UserSettings.removeProperty(appName, restoreSizePosPropertyName);
+                }
             }, this);
         },
 
@@ -889,19 +886,24 @@ Ext.define("BIT.SDS.WindowUtil",
          * // Sets the restore page XY position for File Station windows to (10px, 49px)
          */
         setRestorePagePosition: function(appName, x, y) {
-            var restoreSizePosPropertyName = BIT.SDS.WindowUtil.getRestoreSizePosPropertyName(appName);
-            var restoreSizePos = SYNO.SDS.UserSettings.getProperty(appName, restoreSizePosPropertyName) || {};
+            var restoreSizePosPropertyName;
+            var restoreSizePos;
 
-            delete restoreSizePos.x;
-            delete restoreSizePos.y;
+            if (BIT.SDS.WindowUtil.getAppNamesForDsmVersion().indexOf(appName) !== -1) {
+                restoreSizePosPropertyName = BIT.SDS.WindowUtil.getRestoreSizePosPropertyName(appName);
+                restoreSizePos = SYNO.SDS.UserSettings.getProperty(appName, restoreSizePosPropertyName) || {};
 
-            Ext.apply(restoreSizePos, {
-                pageX:       x,
-                pageY:       y,
-                fromRestore: true
-            });
+                delete restoreSizePos.x;
+                delete restoreSizePos.y;
 
-            SYNO.SDS.UserSettings.setProperty(appName, restoreSizePosPropertyName, restoreSizePos);
+                Ext.apply(restoreSizePos, {
+                    pageX:       x,
+                    pageY:       y,
+                    fromRestore: true
+                });
+
+                SYNO.SDS.UserSettings.setProperty(appName, restoreSizePosPropertyName, restoreSizePos);
+            }
         },
 
         /**
