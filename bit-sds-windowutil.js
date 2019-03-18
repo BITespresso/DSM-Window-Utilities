@@ -861,6 +861,13 @@ Ext.define("BIT.SDS.WindowUtil",
          * Logs the respective default window size(s) of the provided or all application(s) to the
          * console in CSV format. The record format is: `<application name>,<width>,<height>`
          *
+         * To get the default window size, the method {@link getDefaultSize} is called, therefore
+         * please note:
+         *
+         * - The default window size can only be retrieved for currently installed applications.
+         * - The applications must not be running when calling this method.
+         * - The current restore size and XY position will be reset for those applications.
+         *
          * If you call this method without providing `appNames`, the default window sizes of all
          * applications that can open a window on the DSM desktop and are currently installed on the
          * DiskStation will be logged.
