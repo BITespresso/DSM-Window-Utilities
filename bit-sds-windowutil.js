@@ -10,6 +10,96 @@ Ext.namespace("BIT");
  */
 Ext.namespace("BIT.SDS");
 
+Ext.namespace("BIT.SDS.LaunchMgr");
+
+/**
+ * @class      BIT.SDS.LaunchMgr
+ *
+ * @hideconstructor
+ */
+Ext.define("BIT.SDS.LaunchMgr",
+{
+    /**
+     * @lends      BIT.SDS.LaunchMgr
+     */
+    statics: {
+        _lastLaunchTime: 0,
+
+        _minTimeBetweenLaunches: 1000,
+
+        _launchTimeout: 30000,
+
+        _maxTries: 3,
+
+        _minTimeBetweenTries: 10000,
+
+        /**
+         * Launches a DSM application and returns a promise for the application instance.
+         *
+         * The promise will resolve to `null` instead of an application instance if one of these
+         * conditions applies:
+         *
+         * - An invalid application name is provided
+         * - The application is not installed
+         * - An instance of the application is already running
+         * - Launching the application failed
+         * - The application launch is not completed before the timeout is reached
+         *
+         * @param      {string}           appName  The application name.
+         * @return     {BIT.SDS.Promise}  A promise for a `SYNO.SDS.AppInstance` object or `null`.
+         */
+        launch: function(appName) {
+            function tryLaunch(appName) {
+                var currentTime = new Date().getTime();
+                var timeSinceLastLaunch = currentTime - BIT.SDS.LaunchMgr._lastLaunchTime;
+                var launchDelay;
+                var promise;
+                var rejectAfterTimeoutPromise;
+
+                if (timeSinceLastLaunch > BIT.SDS.LaunchMgr._minTimeBetweenLaunches) {
+                    launchDelay = 0;
+                } else {
+                    launchDelay = BIT.SDS.LaunchMgr._minTimeBetweenLaunches - timeSinceLastLaunch;
+                }
+
+                BIT.SDS.LaunchMgr._lastLaunchTime = currentTime + launchDelay;
+
+                promise = new BIT.SDS.Promise(function(resolve, reject) {
+                    SYNO.SDS.AppLaunch.defer(launchDelay, this, [appName, {}, false, function(appInstance) {
+                        var oldInstances;
+
+                        if (appInstance) {
+                            resolve(appInstance);
+                        } else {
+                            oldInstances = SYNO.SDS.AppMgr.getByAppName(appName);
+
+                            if (oldInstances.length > 0) {
+                                resolve(oldInstances[oldInstances.length - 1]);
+                            } else {
+                                resolve(null);
+                            }
+                        }
+                    }, this]);
+                });
+
+                rejectAfterTimeoutPromise = new BIT.SDS.Promise(function(resolve, reject) {
+                    setTimeout(function() {
+                        resolve(null);
+                    }, launchDelay + BIT.SDS.LaunchMgr._launchTimeout);
+                });
+
+                return BIT.SDS.Promise.race([promise, rejectAfterTimeoutPromise]);
+            }
+
+            if ((BIT.SDS.WindowUtil.getAppNamesForDsmVersion().indexOf(appName) === -1) || !BIT.SDS.WindowUtil.isInstalled(appName) || (SYNO.SDS.AppMgr.getByAppName(appName).length > 0)) {
+                return BIT.SDS.Promise.resolve(null);
+            }
+
+            return BIT.SDS.Promise.retry(tryLaunch.createDelegate(this, [appName]), BIT.SDS.LaunchMgr._maxTries, BIT.SDS.LaunchMgr._minTimeBetweenTries);
+        }
+    }
+});
+
 Ext.namespace("BIT.SDS.Promise");
 
 Ext.define("BIT.SDS.Promise",
