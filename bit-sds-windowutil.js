@@ -788,9 +788,9 @@ Ext.define("BIT.SDS.WindowUtil",
          *
          * Therefore please note:
          *
-         *  * The default window size can only be retrieved for currently installed applications.
-         *  * The applications must not be running before calling this method.
-         *  * The current restore size and XY position will be reset for those applications.
+         * - The default window size can only be retrieved for currently installed applications.
+         * - The applications must not be running when calling this method.
+         * - The current restore size and XY position will be reset for those applications.
          *
          * Launching the application(s) is an asychronous operation, therefore this method returns a
          * promise that is fulfilled with an array of {@link BIT.SDS.WindowUtil~AppWinSize} objects.
@@ -803,15 +803,9 @@ Ext.define("BIT.SDS.WindowUtil",
          * @return     {BIT.SDS.Promise}  A promise for an array of `AppWinSize` objects.
          */
         getDefaultSize: function(appNames) {
-            var appNamesForLaunch = [];
+            var promises = [];
 
             if (appNames === undefined) appNames = BIT.SDS.WindowUtil.getAppNamesForDsmVersion();
-
-            Ext.each(appNames, function(appName) {
-                if ((BIT.SDS.WindowUtil.getAppNamesForDsmVersion().indexOf(appName) !== -1) && BIT.SDS.WindowUtil.isInstalled(appName) && (SYNO.SDS.AppMgr.getByAppName(appName).length === 0)) {
-                    appNamesForLaunch.push(appName);
-                }
-            }, this);
 
             function getAppWinSize(appInstance) {
                 var appWindow = appInstance.window;
@@ -835,47 +829,22 @@ Ext.define("BIT.SDS.WindowUtil",
                 return appWinSize;
             }
 
-            function getSizeAfterAppLaunch(appName, launchDelay) {
-                return new BIT.SDS.Promise(function(resolve, reject) {
-                    SYNO.SDS.AppLaunch.defer(launchDelay, this, [appName, {}, false, function(appInstance) {
-                        var appInstances = SYNO.SDS.AppMgr.getByAppName(appName);
+            Ext.each(appNames, function(appName) {
+                promises.push(BIT.SDS.LaunchMgr.launch(appName));
+            }, this);
 
-                        if (appInstances.length > 0) {
-                            resolve(getAppWinSize(appInstances[0]));
-                        } else {
-                            reject(Error("Failed to launch " + appName));
+            return BIT.SDS.Promise.all(promises)
+                .then(function(appInstances) {
+                    var appWinSizes = [];
+
+                    Ext.each(appInstances, function (appInstance) {
+                        if (appInstance) {
+                            appWinSizes.push(getAppWinSize(appInstance));
                         }
-                    }, this]);
+                    }, this);
+
+                    return appWinSizes;
                 });
-            }
-
-            return BIT.SDS.Promise.retry((function(appNamesForLaunch) {
-                var rejectAfterTimeoutPromise;
-                var promises = [];
-                var launchDelay = 0;
-                var launchDelayIncrement = 0;
-
-                Ext.each(appNamesForLaunch, function(appName) {
-                    var appInstances = SYNO.SDS.AppMgr.getByAppName(appName);
-
-                    if (BIT.SDS.WindowUtil.isInstalled(appName) && (appInstances.length === 0)) {
-                        BIT.SDS.WindowUtil.resetRestoreSizeAndPosition(appName);
-                        launchDelay += launchDelayIncrement;
-                        promises.push(getSizeAfterAppLaunch(appName, launchDelay));
-                        launchDelayIncrement = 1000;
-                    } else if (appInstances.length > 0) {
-                        promises.push(BIT.SDS.Promise.resolve(getAppWinSize(appInstances[0])));
-                    }
-                }, this);
-
-                rejectAfterTimeoutPromise = new BIT.SDS.Promise(function(resolve, reject) {
-                    setTimeout(function() {
-                        reject(Error("Operation timed out"));
-                    }, launchDelay + 10000);
-                });
-
-                return BIT.SDS.Promise.race([BIT.SDS.Promise.all(promises), rejectAfterTimeoutPromise]);
-            }).createDelegate(this, [appNamesForLaunch]), 5, 5000);
         },
 
         /**
