@@ -783,8 +783,8 @@ Ext.define("BIT.SDS.WindowUtil",
          * Retrieves the respective default window size(s) of the provided or all application(s).
          *
          * To get the default window size, first the restore size and XY position are reset via
-         * {@link resetRestoreSizeAndPosition}, next the application is launched and finally the
-         * size of the newly opened application window is retrieved.
+         * {@link BIT.SDS.WindowUtil.resetRestoreSizeAndPosition}, next the application is launched
+         * and finally the size of the newly opened application window is retrieved.
          *
          * Therefore please note:
          *
@@ -861,8 +861,8 @@ Ext.define("BIT.SDS.WindowUtil",
          * Logs the respective default window size(s) of the provided or all application(s) to the
          * console in CSV format. The record format is: `<application name>,<width>,<height>`
          *
-         * To get the default window size, the method {@link getDefaultSize} is called, therefore
-         * please note:
+         * To get the default window size, the method {@link BIT.SDS.WindowUtil.getDefaultSize} is
+         * called, therefore please note:
          *
          * - The default window size can only be retrieved for currently installed applications.
          * - The applications must not be running when calling this method.
@@ -984,7 +984,7 @@ Ext.define("BIT.SDS.WindowUtil",
 
         /**
          * Calculates a suggestion for the bounds which can be used as input for
-         * {@link cascadeOverlap}.
+         * {@link BIT.SDS.WindowUtil.cascadeOverlap}.
          *
          * The suggestion is based on the current size of the browser window, therefore you should
          * adjust the browser window to your needs before calling this method.
