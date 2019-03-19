@@ -735,42 +735,6 @@ Ext.define("BIT.SDS.WindowUtil",
         },
 
         /**
-         * Returns the DSM version currently installed on the DiskStation. The version has the
-         * format: `<major version>.<minor version>`
-         *
-         * @return     {string}  The DSM version.
-         *
-         * @example
-         * BIT.SDS.WindowUtil.getDsmVersion();
-         * // => 6.2
-         */
-        getDsmVersion: function() {
-            return _S("majorversion") + "." + _S("minorversion");
-        },
-
-        /**
-         * Returns the name of the property that holds the restore size and position of the
-         * application window.
-         *
-         * @param      {string}  appName  The application name.
-         * @return     {string}  The property name.
-         */
-        getRestoreSizePosPropertyName: function(appName) {
-            var restoreSizePosPropertyName = "restoreSizePos";
-            var dsmVersion = BIT.SDS.WindowUtil.getDsmVersion();
-
-            if (appName === "SYNO.SDS.HA.Instance") {
-                if (["5.2", "6.0", "6.1"].indexOf(dsmVersion) !== -1) {
-                    restoreSizePosPropertyName = "restoreSizePos";
-                } else {
-                    restoreSizePosPropertyName = "bindHAWizardWindowRestoreSizePos";
-                }
-            }
-
-            return restoreSizePosPropertyName;
-        },
-
-        /**
          * An object containing the size of an application window.
          *
          * @typedef    {Object}  BIT.SDS.WindowUtil~AppWinSize
@@ -845,6 +809,42 @@ Ext.define("BIT.SDS.WindowUtil",
 
                     return appWinSizes;
                 });
+        },
+
+        /**
+         * Returns the DSM version currently installed on the DiskStation. The version has the
+         * format: `<major version>.<minor version>`
+         *
+         * @return     {string}  The DSM version.
+         *
+         * @example
+         * BIT.SDS.WindowUtil.getDsmVersion();
+         * // => 6.2
+         */
+        getDsmVersion: function() {
+            return _S("majorversion") + "." + _S("minorversion");
+        },
+
+        /**
+         * Returns the name of the property that holds the restore size and position of the
+         * application window.
+         *
+         * @param      {string}  appName  The application name.
+         * @return     {string}  The property name.
+         */
+        getRestoreSizePosPropertyName: function(appName) {
+            var restoreSizePosPropertyName = "restoreSizePos";
+            var dsmVersion = BIT.SDS.WindowUtil.getDsmVersion();
+
+            if (appName === "SYNO.SDS.HA.Instance") {
+                if (["5.2", "6.0", "6.1"].indexOf(dsmVersion) !== -1) {
+                    restoreSizePosPropertyName = "restoreSizePos";
+                } else {
+                    restoreSizePosPropertyName = "bindHAWizardWindowRestoreSizePos";
+                }
+            }
+
+            return restoreSizePosPropertyName;
         },
 
         /**
