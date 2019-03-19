@@ -886,10 +886,10 @@ Ext.define("BIT.SDS.WindowUtil",
          */
         logDefaultSize: function(appNames) {
             BIT.SDS.WindowUtil.getDefaultSize(appNames)
-                .then(function(results) {
-                    Ext.each(results, function(result) {
-                        console.log(this.appName + "," + this.width + "," + this.height);
-                    });
+                .then(function(appWinSizes) {
+                    Ext.each(appWinSizes, function(appWinSize) {
+                        console.log(appWinSize.appName + "," + appWinSize.width + "," + appWinSize.height);
+                    }, this);
                 })
                 .catch(function(reason) {
                     console.log("Error retrieving window size: " + ((reason instanceof Error) ? reason.message : reason));
