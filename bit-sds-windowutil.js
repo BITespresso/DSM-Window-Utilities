@@ -806,10 +806,10 @@ Ext.define("BIT.SDS.WindowUtil",
             }, this);
 
             return BIT.SDS.Promise.all(promises)
-                .then(function(appInstances) {
+                .then(function(appInstancesOrNulls) {
                     var appWinSizes = [];
 
-                    Ext.each(appInstances, function (appInstance) {
+                    Ext.each(appInstancesOrNulls, function (appInstance) {
                         if (appInstance) {
                             appWinSizes.push(getAppWinSize(appInstance));
                         }
