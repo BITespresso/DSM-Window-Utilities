@@ -767,9 +767,16 @@ Ext.define("BIT.SDS.WindowUtil",
          * @return     {BIT.SDS.Promise}  A promise for an array of `AppWinSize` objects.
          */
         getDefaultSize: function(appNames) {
+            var appNamesForLaunch = [];
             var promises = [];
 
             if (appNames === undefined) appNames = BIT.SDS.WindowUtil.getAppNamesForDsmVersion();
+
+            Ext.each(appNames, function(appName) {
+                if ((BIT.SDS.WindowUtil.getAppNamesForDsmVersion().indexOf(appName) !== -1) && BIT.SDS.WindowUtil.isInstalled(appName) && (SYNO.SDS.AppMgr.getByAppName(appName).length === 0)) {
+                    appNamesForLaunch.push(appName);
+                }
+            }, this);
 
             function getAppWinSize(appInstance) {
                 var appWindow = appInstance.window;
@@ -793,7 +800,7 @@ Ext.define("BIT.SDS.WindowUtil",
                 return appWinSize;
             }
 
-            Ext.each(appNames, function(appName) {
+            Ext.each(appNamesForLaunch, function(appName) {
                 promises.push(BIT.SDS.LaunchMgr.launch(appName));
             }, this);
 
