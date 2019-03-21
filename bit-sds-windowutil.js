@@ -905,6 +905,50 @@ Ext.define("BIT.SDS.WindowUtil",
         },
 
         /**
+         * Opens the provided or all application(s).
+         *
+         * Please note that already running applications will not be opened by this method.
+         *
+         * Launching the application(s) is an asychronous operation, therefore this method returns a
+         * promise that is fulfilled with an array of `SYNO.SDS.AppInstance` objects.
+         *
+         * If you call this method without providing `appNames`, all applications that can open a
+         * window on the DSM desktop and are currently installed on the DiskStation will be opened.
+         *
+         * @param      {string[]|string}  [appNames]  The application name(s).
+         * @return     {BIT.SDS.Promise}  A promise for an array of `SYNO.SDS.AppInstance` objects.
+         */
+        open: function(appNames) {
+            var appNamesForLaunch = [];
+            var promises = [];
+
+            if (appNames === undefined) appNames = BIT.SDS.WindowUtil.getAppNamesForDsmVersion();
+
+            Ext.each(appNames, function(appName) {
+                if ((BIT.SDS.WindowUtil.getAppNamesForDsmVersion().indexOf(appName) !== -1) && BIT.SDS.WindowUtil.isInstalled(appName) && (SYNO.SDS.AppMgr.getByAppName(appName).length === 0)) {
+                    appNamesForLaunch.push(appName);
+                }
+            }, this);
+
+            Ext.each(appNamesForLaunch, function(appName) {
+                promises.push(BIT.SDS.LaunchMgr.launch(appName));
+            }, this);
+
+            return BIT.SDS.Promise.all(promises)
+                .then(function(appInstancesOrNulls) {
+                    var appInstances = [];
+
+                    Ext.each(appInstancesOrNulls, function (appInstance) {
+                        if (appInstance) {
+                            appInstances.push(appInstance);
+                        }
+                    }, this);
+
+                    return appInstances;
+                });
+        },
+
+        /**
          * Resets the restore size and XY position of the provided application(s).
          *
          * If you call this method without providing `appNames`, all applications that can open a
