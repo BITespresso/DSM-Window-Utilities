@@ -201,7 +201,7 @@ Ext.define("BIT.SDS.Promise",
          * Subsequent calls of the function will be deferred by a delay specified in milliseconds.
          *
          * @param      {Function}         fn      The function returning a promise.
-         * @param      {number}           times   The maximum number of attempts.
+         * @param      {number}           tries   The maximum number of attempts.
          * @param      {number}           delay   The delay.
          * @return     {BIT.SDS.Promise}  A new promise.
          *
@@ -218,13 +218,13 @@ Ext.define("BIT.SDS.Promise",
          *   .then(...)
          *   .catch(...);
          */
-        retry: function(fn, times, delay) {
+        retry: function(fn, tries, delay) {
             return new BIT.SDS.Promise(function(resolve, reject) {
                 var lastRejectReason;
 
                 function retry() {
-                    if (times > 0) {
-                        times--;
+                    if (tries > 0) {
+                        tries--;
                         fn()
                             .then(resolve)
                             .catch(function(reason) {
