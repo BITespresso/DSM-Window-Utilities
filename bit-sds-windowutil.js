@@ -801,6 +801,7 @@ Ext.define("BIT.SDS.WindowUtil",
             }
 
             Ext.each(appNamesForLaunch, function(appName) {
+                BIT.SDS.WindowUtil.resetRestoreSizeAndPosition(appName);
                 promises.push(BIT.SDS.LaunchMgr.launch(appName));
             }, this);
 
