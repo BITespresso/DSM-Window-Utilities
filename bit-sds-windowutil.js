@@ -661,6 +661,26 @@ Ext.define("BIT.SDS.WindowUtil",
         },
 
         /**
+         * Closes the provided or all application(s).
+         *
+         * If you call this method without providing `appNames`, all applications that can open a
+         * window on the DSM desktop and are currently installed on the DiskStation will be closed.
+         *
+         * @param      {string[]|string}  [appNames]  The application name(s).
+         */
+        close: function(appNames) {
+            if (appNames === undefined) appNames = BIT.SDS.WindowUtil.getAppNamesForDsmVersion();
+
+            Ext.each(appNames, function(appName) {
+                if ((BIT.SDS.WindowUtil.getAppNamesForDsmVersion().indexOf(appName) !== -1) && BIT.SDS.WindowUtil.isInstalled(appName)) {
+                    Ext.each(SYNO.SDS.AppMgr.getByAppName(appName), function(appInstance) {
+                        appInstance.window.close();
+                    }, this);
+                }
+            }, this);
+        },
+
+        /**
          * An object containing data about an application.
          *
          * @typedef    {Object}    BIT.SDS.WindowUtil~AppData
