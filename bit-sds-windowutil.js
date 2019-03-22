@@ -33,6 +33,8 @@ Ext.define("BIT.SDS.LaunchMgr",
 
         _minTimeBetweenTries: 10000,
 
+        _delayBeforeResolve: 2000,
+
         /**
          * Launches a DSM application and returns a promise for the application instance.
          *
@@ -69,12 +71,12 @@ Ext.define("BIT.SDS.LaunchMgr",
                         var oldInstances;
 
                         if (appInstance) {
-                            resolve(appInstance);
+                            resolve.defer(BIT.SDS.LaunchMgr._delayBeforeResolve, this, [appInstance]);
                         } else {
                             oldInstances = SYNO.SDS.AppMgr.getByAppName(appName);
 
                             if (oldInstances.length > 0) {
-                                resolve(oldInstances[oldInstances.length - 1]);
+                                resolve.defer(BIT.SDS.LaunchMgr._delayBeforeResolve, this, [oldInstances[oldInstances.length - 1]]);
                             } else {
                                 resolve(null);
                             }
