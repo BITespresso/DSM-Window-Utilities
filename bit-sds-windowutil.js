@@ -23,17 +23,17 @@ Ext.define("BIT.SDS.LaunchMgr",
      * @lends      BIT.SDS.LaunchMgr
      */
     statics: {
-        _lastLaunchTime: 0,
+        lastLaunchTime: 0,
 
-        _minTimeBetweenLaunches: 1000,
+        minTimeBetweenLaunches: 1000,
 
-        _launchTimeout: 30000,
+        launchTimeout: 30000,
 
-        _maxTries: 3,
+        maxTries: 3,
 
-        _minTimeBetweenTries: 10000,
+        minTimeBetweenTries: 10000,
 
-        _delayBeforeResolve: 2000,
+        delayBeforeResolve: 2000,
 
         /**
          * Launches a DSM application and returns a promise for the application instance.
@@ -53,30 +53,30 @@ Ext.define("BIT.SDS.LaunchMgr",
         launch: function(appName) {
             function tryLaunch(appName) {
                 var currentTime = new Date().getTime();
-                var timeSinceLastLaunch = currentTime - BIT.SDS.LaunchMgr._lastLaunchTime;
+                var timeSinceLastLaunch = currentTime - BIT.SDS.LaunchMgr.lastLaunchTime;
                 var launchDelay;
                 var promise;
                 var rejectAfterTimeoutPromise;
 
-                if (timeSinceLastLaunch > BIT.SDS.LaunchMgr._minTimeBetweenLaunches) {
+                if (timeSinceLastLaunch > BIT.SDS.LaunchMgr.minTimeBetweenLaunches) {
                     launchDelay = 0;
                 } else {
-                    launchDelay = BIT.SDS.LaunchMgr._minTimeBetweenLaunches - timeSinceLastLaunch;
+                    launchDelay = BIT.SDS.LaunchMgr.minTimeBetweenLaunches - timeSinceLastLaunch;
                 }
 
-                BIT.SDS.LaunchMgr._lastLaunchTime = currentTime + launchDelay;
+                BIT.SDS.LaunchMgr.lastLaunchTime = currentTime + launchDelay;
 
                 promise = new BIT.SDS.Promise(function(resolve, reject) {
                     SYNO.SDS.AppLaunch.defer(launchDelay, this, [appName, {}, false, function(appInstance) {
                         var oldInstances;
 
                         if (appInstance) {
-                            resolve.defer(BIT.SDS.LaunchMgr._delayBeforeResolve, this, [appInstance]);
+                            resolve.defer(BIT.SDS.LaunchMgr.delayBeforeResolve, this, [appInstance]);
                         } else {
                             oldInstances = SYNO.SDS.AppMgr.getByAppName(appName);
 
                             if (oldInstances.length > 0) {
-                                resolve.defer(BIT.SDS.LaunchMgr._delayBeforeResolve, this, [oldInstances[oldInstances.length - 1]]);
+                                resolve.defer(BIT.SDS.LaunchMgr.delayBeforeResolve, this, [oldInstances[oldInstances.length - 1]]);
                             } else {
                                 resolve(null);
                             }
@@ -87,7 +87,7 @@ Ext.define("BIT.SDS.LaunchMgr",
                 rejectAfterTimeoutPromise = new BIT.SDS.Promise(function(resolve, reject) {
                     setTimeout(function() {
                         resolve(null);
-                    }, launchDelay + BIT.SDS.LaunchMgr._launchTimeout);
+                    }, launchDelay + BIT.SDS.LaunchMgr.launchTimeout);
                 });
 
                 return BIT.SDS.Promise.race([promise, rejectAfterTimeoutPromise]);
@@ -97,7 +97,7 @@ Ext.define("BIT.SDS.LaunchMgr",
                 return BIT.SDS.Promise.resolve(null);
             }
 
-            return BIT.SDS.Promise.retry(tryLaunch.createDelegate(this, [appName]), BIT.SDS.LaunchMgr._maxTries, BIT.SDS.LaunchMgr._minTimeBetweenTries);
+            return BIT.SDS.Promise.retry(tryLaunch.createDelegate(this, [appName]), BIT.SDS.LaunchMgr.maxTries, BIT.SDS.LaunchMgr.minTimeBetweenTries);
         }
     }
 });
@@ -469,7 +469,7 @@ Ext.define("BIT.SDS.WindowUtil",
      * @lends      BIT.SDS.WindowUtil
      */
     statics: {
-        _appDataArray: [
+        appDataArray: [
             ["SYNO.SDS.AdminCenter.Application",        ["5.2", "6.0", "6.1", "6.2"], [ 994, 570]],
             ["SYNO.SDS.App.FileStation3.Instance",      ["5.2", "6.0", "6.1", "6.2"], [ 920, 560]],
             ["SYNO.SDS.EzInternet.Instance",            ["5.2", "6.0", "6.1", "6.2"], [ 700, 464]],
@@ -538,7 +538,7 @@ Ext.define("BIT.SDS.WindowUtil",
             ["SYNO.SDS.Virtualization.Application",     [                     "6.2"], [1038, 637]]
         ],
 
-        _appData: [],
+        appData: [],
 
         /**
          * Sets the restore XY position of all applications to cascaded, overlapping positions
@@ -698,22 +698,22 @@ Ext.define("BIT.SDS.WindowUtil",
          * @return     {BIT.SDS.WindowUtil~AppData[]}  An array of `AppData` objects.
          */
         getAppData: function() {
-            if (!Ext.isArray(BIT.SDS.WindowUtil._appData) || (BIT.SDS.WindowUtil._appData.length !== BIT.SDS.WindowUtil._appDataArray.length)) {
-                BIT.SDS.WindowUtil._appData = [];
+            if (!Ext.isArray(BIT.SDS.WindowUtil.appData) || (BIT.SDS.WindowUtil.appData.length !== BIT.SDS.WindowUtil.appDataArray.length)) {
+                BIT.SDS.WindowUtil.appData = [];
 
-                Ext.each(BIT.SDS.WindowUtil._appDataArray, function(_appData) {
+                Ext.each(BIT.SDS.WindowUtil.appDataArray, function(appData) {
                     var appData = {
-                        appName:          _appData[0],
-                        dsmVersions:      _appData[1],
-                        maxDefaultWidth:  _appData[2][0],
-                        maxDefaultHeight: _appData[2][1]
+                        appName:          appData[0],
+                        dsmVersions:      appData[1],
+                        maxDefaultWidth:  appData[2][0],
+                        maxDefaultHeight: appData[2][1]
                     };
 
-                    BIT.SDS.WindowUtil._appData.push(appData);
+                    BIT.SDS.WindowUtil.appData.push(appData);
                 }, this);
             }
 
-            return BIT.SDS.WindowUtil._appData;
+            return BIT.SDS.WindowUtil.appData;
         },
 
         /**
