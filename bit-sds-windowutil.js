@@ -25,16 +25,6 @@ Ext.define("BIT.SDS.LaunchMgr",
     statics: {
         lastLaunchTime: 0,
 
-        minTimeBetweenLaunches: 1000,
-
-        launchTimeout: 30000,
-
-        maxTries: 3,
-
-        minTimeBetweenTries: 10000,
-
-        delayBeforeResolve: 2000,
-
         /**
          * Launches a DSM application and returns a promise for the application instance.
          *
@@ -51,6 +41,12 @@ Ext.define("BIT.SDS.LaunchMgr",
          * @return     {BIT.SDS.Promise}  A promise for a `SYNO.SDS.AppInstance` object or `null`.
          */
         launch: function(appName) {
+            var MIN_TIME_BETWEEN_LAUNCHES = 1000;
+            var LAUNCH_TIMEOUT            = 30000;
+            var DELAY_BEFORE_RESOLVE      = 2000;
+            var MAX_TRIES                 = 3;
+            var MIN_TIME_BETWEEN_TRIES    = 10000;
+
             function tryLaunch(appName) {
                 var currentTime = new Date().getTime();
                 var timeSinceLastLaunch = currentTime - BIT.SDS.LaunchMgr.lastLaunchTime;
@@ -58,10 +54,10 @@ Ext.define("BIT.SDS.LaunchMgr",
                 var promise;
                 var rejectAfterTimeoutPromise;
 
-                if (timeSinceLastLaunch > BIT.SDS.LaunchMgr.minTimeBetweenLaunches) {
+                if (timeSinceLastLaunch > MIN_TIME_BETWEEN_LAUNCHES) {
                     launchDelay = 0;
                 } else {
-                    launchDelay = BIT.SDS.LaunchMgr.minTimeBetweenLaunches - timeSinceLastLaunch;
+                    launchDelay = MIN_TIME_BETWEEN_LAUNCHES - timeSinceLastLaunch;
                 }
 
                 BIT.SDS.LaunchMgr.lastLaunchTime = currentTime + launchDelay;
@@ -71,12 +67,12 @@ Ext.define("BIT.SDS.LaunchMgr",
                         var oldInstances;
 
                         if (appInstance) {
-                            resolve.defer(BIT.SDS.LaunchMgr.delayBeforeResolve, this, [appInstance]);
+                            resolve.defer(DELAY_BEFORE_RESOLVE, this, [appInstance]);
                         } else {
                             oldInstances = SYNO.SDS.AppMgr.getByAppName(appName);
 
                             if (oldInstances.length > 0) {
-                                resolve.defer(BIT.SDS.LaunchMgr.delayBeforeResolve, this, [oldInstances[oldInstances.length - 1]]);
+                                resolve.defer(DELAY_BEFORE_RESOLVE, this, [oldInstances[oldInstances.length - 1]]);
                             } else {
                                 resolve(null);
                             }
@@ -87,7 +83,7 @@ Ext.define("BIT.SDS.LaunchMgr",
                 rejectAfterTimeoutPromise = new BIT.SDS.Promise(function(resolve, reject) {
                     setTimeout(function() {
                         resolve(null);
-                    }, launchDelay + BIT.SDS.LaunchMgr.launchTimeout);
+                    }, launchDelay + LAUNCH_TIMEOUT);
                 });
 
                 return BIT.SDS.Promise.race([promise, rejectAfterTimeoutPromise]);
@@ -97,7 +93,7 @@ Ext.define("BIT.SDS.LaunchMgr",
                 return BIT.SDS.Promise.resolve(null);
             }
 
-            return BIT.SDS.Promise.retry(tryLaunch.createDelegate(this, [appName]), BIT.SDS.LaunchMgr.maxTries, BIT.SDS.LaunchMgr.minTimeBetweenTries);
+            return BIT.SDS.Promise.retry(tryLaunch.createDelegate(this, [appName]), MAX_TRIES, MIN_TIME_BETWEEN_TRIES);
         }
     }
 });
@@ -113,10 +109,10 @@ Ext.define("BIT.SDS.Promise",
      * @lends      BIT.SDS.Promise
      */
     statics: {
-        state: {
-            pending:   "pending",
-            fulfilled: "fulfilled",
-            rejected:  "rejected"
+        STATE: {
+            PENDING:   "pending",
+            FULFILLED: "fulfilled",
+            REJECTED:  "rejected"
         },
 
         /**
@@ -258,7 +254,7 @@ Ext.define("BIT.SDS.Promise",
      * @param      {Function}  resolver  The resolver function.
      */
     constructor: function(resolver) {
-        this.state = BIT.SDS.Promise.state.pending;
+        this.state = BIT.SDS.Promise.STATE.PENDING;
         this.clients = [];
         this.result = undefined;
 
@@ -327,9 +323,9 @@ Ext.define("BIT.SDS.Promise",
      * @param      {*}   reason  The reason.
      */
     reject: function(reason) {
-        if (this.state !== BIT.SDS.Promise.state.pending) return;
+        if (this.state !== BIT.SDS.Promise.STATE.PENDING) return;
 
-        this.state = BIT.SDS.Promise.state.rejected;
+        this.state = BIT.SDS.Promise.STATE.REJECTED;
         this.result = reason;
 
         function rejectAllClients() {
@@ -364,7 +360,7 @@ Ext.define("BIT.SDS.Promise",
             }
         }
 
-        if (this.state !== BIT.SDS.Promise.state.pending) return;
+        if (this.state !== BIT.SDS.Promise.STATE.PENDING) return;
 
         if (value === this) return this.reject(Error("A promise cannot be resolved by itself"));
 
@@ -384,7 +380,7 @@ Ext.define("BIT.SDS.Promise",
             }
         }
 
-        this.state = BIT.SDS.Promise.state.fulfilled;
+        this.state = BIT.SDS.Promise.STATE.FULFILLED;
         this.result = value;
 
         function fulfillAllClients() {
@@ -439,15 +435,15 @@ Ext.define("BIT.SDS.Promise",
         };
 
         switch (this.state) {
-        case BIT.SDS.Promise.state.pending:
+        case BIT.SDS.Promise.STATE.PENDING:
             this.clients.push(client);
             break;
 
-        case BIT.SDS.Promise.state.fulfilled:
+        case BIT.SDS.Promise.STATE.FULFILLED:
             setTimeout(client.fulfillClient.createDelegate(client, [this.result]));
             break;
 
-        case BIT.SDS.Promise.state.rejected:
+        case BIT.SDS.Promise.STATE.REJECTED:
             setTimeout(client.rejectClient.createDelegate(client, [this.result]));
             break;
         }
@@ -469,7 +465,7 @@ Ext.define("BIT.SDS.WindowUtil",
      * @lends      BIT.SDS.WindowUtil
      */
     statics: {
-        appDataArray: [
+        APP_DATA_ARRAY: [
             ["SYNO.SDS.AdminCenter.Application",        ["5.2", "6.0", "6.1", "6.2"], [ 994, 570]],
             ["SYNO.SDS.App.FileStation3.Instance",      ["5.2", "6.0", "6.1", "6.2"], [ 920, 560]],
             ["SYNO.SDS.EzInternet.Instance",            ["5.2", "6.0", "6.1", "6.2"], [ 700, 464]],
@@ -698,10 +694,10 @@ Ext.define("BIT.SDS.WindowUtil",
          * @return     {BIT.SDS.WindowUtil~AppData[]}  An array of `AppData` objects.
          */
         getAppData: function() {
-            if (!Ext.isArray(BIT.SDS.WindowUtil.appData) || (BIT.SDS.WindowUtil.appData.length !== BIT.SDS.WindowUtil.appDataArray.length)) {
+            if (!Ext.isArray(BIT.SDS.WindowUtil.appData) || (BIT.SDS.WindowUtil.appData.length !== BIT.SDS.WindowUtil.APP_DATA_ARRAY.length)) {
                 BIT.SDS.WindowUtil.appData = [];
 
-                Ext.each(BIT.SDS.WindowUtil.appDataArray, function(appData) {
+                Ext.each(BIT.SDS.WindowUtil.APP_DATA_ARRAY, function(appData) {
                     var appData = {
                         appName:          appData[0],
                         dsmVersions:      appData[1],
@@ -1072,18 +1068,18 @@ Ext.define("BIT.SDS.WindowUtil",
         suggestBounds: function() {
             var bounds = {};
 
-            var taskbarHeight = Ext.get("sds-taskbar").getHeight();
-            var desktopShortcutsWidth = Ext.select("li.launch-icon").first().getWidth() + (2 * Ext.select("ul.sds-desktop-shortcut").first().getMargins("l"));
+            var TASKBAR_HEIGHT = Ext.get("sds-taskbar").getHeight();
+            var DESKTOP_SHORTCUTS_WIDTH = Ext.select("li.launch-icon").first().getWidth() + (2 * Ext.select("ul.sds-desktop-shortcut").first().getMargins("l"));
 
-            var marginTopSmall    = 10;
-            var marginRightSmall  = 10;
-            var marginBottomSmall = 10;
-            var marginLeftSmall   = 10;
+            var MARGIN_TOP_SMALL    = 10;
+            var MARGIN_RIGHT_SMALL  = 10;
+            var MARGIN_BOTTOM_SMALL = 10;
+            var MARGIN_LEFT_SMALL   = 10;
 
-            var marginTopLarge    = 100;
-            var marginRightLarge  = 100;
-            var marginBottomLarge = 100;
-            var marginLeftLarge   = desktopShortcutsWidth - ((desktopShortcutsWidth - 11) % 30) + 29;
+            var MARGIN_TOP_LARGE    = 100;
+            var MARGIN_RIGHT_LARGE  = 100;
+            var MARGIN_BOTTOM_LARGE = 100;
+            var MARGIN_LEFT_LARGE   = DESKTOP_SHORTCUTS_WIDTH - ((DESKTOP_SHORTCUTS_WIDTH - 11) % 30) + 29;
 
             var innerWidth  = window.innerWidth  || document.documentElement.clientWidth  || document.body.clientWidth;
             var innerHeight = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
@@ -1091,16 +1087,16 @@ Ext.define("BIT.SDS.WindowUtil",
             innerWidth  -= 16;
             innerHeight -= 18;
 
-            if ((innerWidth - marginLeftLarge - marginRightLarge > 1200) && (innerHeight - marginTopLarge - marginBottomLarge - taskbarHeight > 700)) {
-                bounds.x      = marginLeftLarge;
-                bounds.y      = marginTopLarge + taskbarHeight;
-                bounds.width  = innerWidth  - marginLeftLarge - marginRightLarge;
-                bounds.height = innerHeight - marginTopLarge  - marginBottomLarge - taskbarHeight;
+            if ((innerWidth - MARGIN_LEFT_LARGE - MARGIN_RIGHT_LARGE > 1200) && (innerHeight - MARGIN_TOP_LARGE - MARGIN_BOTTOM_LARGE - TASKBAR_HEIGHT > 700)) {
+                bounds.x      = MARGIN_LEFT_LARGE;
+                bounds.y      = MARGIN_TOP_LARGE + TASKBAR_HEIGHT;
+                bounds.width  = innerWidth  - MARGIN_LEFT_LARGE - MARGIN_RIGHT_LARGE;
+                bounds.height = innerHeight - MARGIN_TOP_LARGE  - MARGIN_BOTTOM_LARGE - TASKBAR_HEIGHT;
             } else {
-                bounds.x      = marginLeftSmall;
-                bounds.y      = marginTopSmall + taskbarHeight;
-                bounds.width  = innerWidth  - marginLeftSmall - marginRightSmall;
-                bounds.height = innerHeight - marginTopSmall  - marginBottomSmall - taskbarHeight;
+                bounds.x      = MARGIN_LEFT_SMALL;
+                bounds.y      = MARGIN_TOP_SMALL + TASKBAR_HEIGHT;
+                bounds.width  = innerWidth  - MARGIN_LEFT_SMALL - MARGIN_RIGHT_SMALL;
+                bounds.height = innerHeight - MARGIN_TOP_SMALL  - MARGIN_BOTTOM_SMALL - TASKBAR_HEIGHT;
             }
 
             bounds.width  -= bounds.width  % 5;
