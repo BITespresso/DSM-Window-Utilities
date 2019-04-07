@@ -10,17 +10,17 @@ Ext.namespace("BIT");
  */
 Ext.namespace("BIT.SDS");
 
-Ext.namespace("BIT.SDS.LaunchMgr");
+Ext.namespace("BIT.SDS.AppMgr");
 
 /**
- * @class      BIT.SDS.LaunchMgr
+ * @class      BIT.SDS.AppMgr
  *
  * @hideconstructor
  */
-Ext.define("BIT.SDS.LaunchMgr",
+Ext.define("BIT.SDS.AppMgr",
 {
     /**
-     * @lends      BIT.SDS.LaunchMgr
+     * @lends      BIT.SDS.AppMgr
      */
     statics: {
         lastLaunchTime: 0,
@@ -49,7 +49,7 @@ Ext.define("BIT.SDS.LaunchMgr",
 
             function tryLaunch(appName) {
                 var currentTime = new Date().getTime();
-                var timeSinceLastLaunch = currentTime - BIT.SDS.LaunchMgr.lastLaunchTime;
+                var timeSinceLastLaunch = currentTime - BIT.SDS.AppMgr.lastLaunchTime;
                 var launchDelay;
                 var promise;
                 var rejectAfterTimeoutPromise;
@@ -60,7 +60,7 @@ Ext.define("BIT.SDS.LaunchMgr",
                     launchDelay = MIN_TIME_BETWEEN_LAUNCHES - timeSinceLastLaunch;
                 }
 
-                BIT.SDS.LaunchMgr.lastLaunchTime = currentTime + launchDelay;
+                BIT.SDS.AppMgr.lastLaunchTime = currentTime + launchDelay;
 
                 promise = new BIT.SDS.Promise(function(resolve, reject) {
                     SYNO.SDS.AppLaunch.defer(launchDelay, this, [appName, {}, false, function(appInstance) {
@@ -820,7 +820,7 @@ Ext.define("BIT.SDS.WindowUtil",
 
             Ext.each(appNamesForLaunch, function(appName) {
                 BIT.SDS.WindowUtil.resetRestoreSizeAndPosition(appName);
-                promises.push(BIT.SDS.LaunchMgr.launch(appName));
+                promises.push(BIT.SDS.AppMgr.launch(appName));
             }, this);
 
             return BIT.SDS.Promise.all(promises)
@@ -949,7 +949,7 @@ Ext.define("BIT.SDS.WindowUtil",
             }, this);
 
             Ext.each(appNamesForLaunch, function(appName) {
-                promises.push(BIT.SDS.LaunchMgr.launch(appName));
+                promises.push(BIT.SDS.AppMgr.launch(appName));
             }, this);
 
             return BIT.SDS.Promise.all(promises)
