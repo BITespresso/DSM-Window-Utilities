@@ -534,6 +534,8 @@ Ext.define("BIT.SDS.WindowUtil",
             ["SYNO.SDS.Virtualization.Application",     [                     "6.2"], [1038, 637]]
         ],
 
+        nextAsyncActionTime: 0,
+
         appData: [],
 
         /**
@@ -661,21 +663,76 @@ Ext.define("BIT.SDS.WindowUtil",
         /**
          * Closes the provided or all application(s).
          *
+         * Closing application(s) is an asychronous operation, therefore this method returns a
+         * promise that is fulfilled when all provided applications are closed.
+         *
          * If you call this method without providing `appNames`, all applications that can open a
          * window on the DSM desktop and are currently installed on the DiskStation will be closed.
          *
          * @param      {string[]|string}  [appNames]  The application name(s).
+         * @return     {BIT.SDS.Promise}  A promise.
          */
         close: function(appNames) {
+            var MAX_TRIES           =    3;
+            var DELAY_BETWEEN_TRIES = 5000;
+            var DELAY_AFTER_CLOSE   =  500;
+            var DELAY_BEFORE_CHECK  = 2000;
+
+            var appNamesForClose = [];
+            var promisesFromCloseApp = [];
+
+            function closeApp(appName) {
+                var promisesForAppInstances = [];
+
+                Ext.each(SYNO.SDS.AppMgr.getByAppName(appName), function(appInstance) {
+                    promisesForAppInstances.push(BIT.SDS.Promise.retry(closeAppInstance.createDelegate(this, [appInstance]), MAX_TRIES, DELAY_BETWEEN_TRIES));
+                }, this);
+
+                return BIT.SDS.Promise.all(promisesForAppInstances);
+            }
+
+            function closeAppInstance(appInstance) {
+                var delay;
+
+                if (!appInstance.window) return BIT.SDS.Promise.resolve();
+
+                delay = BIT.SDS.WindowUtil.getAndAddDelayForAsyncAction(DELAY_AFTER_CLOSE);
+                appInstance.window.close.defer(delay, appInstance.window);
+
+                return new BIT.SDS.Promise(function(resolve, reject) {
+                    setTimeout(function() {
+                        if (!appInstance.window) {
+                            resolve();
+                        } else {
+                            reject();
+                        }
+                    }, delay + DELAY_BEFORE_CHECK);
+                });
+            }
+
             if (appNames === undefined) appNames = BIT.SDS.WindowUtil.getAppNamesForDsmVersion();
 
             Ext.each(appNames, function(appName) {
-                if ((BIT.SDS.WindowUtil.getAppNamesForDsmVersion().indexOf(appName) !== -1) && BIT.SDS.WindowUtil.isInstalled(appName)) {
-                    Ext.each(SYNO.SDS.AppMgr.getByAppName(appName), function(appInstance) {
-                        appInstance.window.close();
-                    }, this);
+                if ((BIT.SDS.WindowUtil.getAppNamesForDsmVersion().indexOf(appName) !== -1) && BIT.SDS.WindowUtil.isInstalled(appName) && (SYNO.SDS.AppMgr.getByAppName(appName).length > 0)) {
+                    appNamesForClose.push(appName);
                 }
             }, this);
+
+            Ext.each(appNamesForClose, function(appName) {
+                promisesFromCloseApp.push(closeApp(appName));
+            }, this);
+
+            return BIT.SDS.Promise.all(promisesFromCloseApp);
+        },
+
+        getAndAddDelayForAsyncAction: function(delayToAdd) {
+            var currentTime = new Date().getTime();
+            var delay = BIT.SDS.WindowUtil.nextAsyncActionTime - currentTime;
+
+            delay = (delay > 0) ? delay : 0;
+            BIT.SDS.WindowUtil.nextAsyncActionTime = currentTime + delay + delayToAdd;
+
+            return delay;
         },
 
         /**
