@@ -754,12 +754,12 @@ Ext.define("BIT.SDS.WindowUtil",
             if (!Ext.isArray(BIT.SDS.WindowUtil.appData) || (BIT.SDS.WindowUtil.appData.length !== BIT.SDS.WindowUtil.APP_DATA_ARRAY.length)) {
                 BIT.SDS.WindowUtil.appData = [];
 
-                Ext.each(BIT.SDS.WindowUtil.APP_DATA_ARRAY, function(appData) {
+                Ext.each(BIT.SDS.WindowUtil.APP_DATA_ARRAY, function(appDataElement) {
                     var appData = {
-                        appName:          appData[0],
-                        dsmVersions:      appData[1],
-                        maxDefaultWidth:  appData[2][0],
-                        maxDefaultHeight: appData[2][1]
+                        appName:          appDataElement[0],
+                        dsmVersions:      appDataElement[1],
+                        maxDefaultWidth:  appDataElement[2][0],
+                        maxDefaultHeight: appDataElement[2][1]
                     };
 
                     BIT.SDS.WindowUtil.appData.push(appData);
