@@ -679,16 +679,16 @@ Ext.define("BIT.SDS.WindowUtil",
             var DELAY_BEFORE_CHECK  = 2000;
 
             var appNamesForClose = [];
-            var promisesFromCloseApp = [];
+            var promises = [];
 
             function closeApp(appName) {
-                var promisesForAppInstances = [];
+                var promises = [];
 
                 Ext.each(SYNO.SDS.AppMgr.getByAppName(appName), function(appInstance) {
-                    promisesForAppInstances.push(BIT.SDS.Promise.retry(closeAppInstance.createDelegate(this, [appInstance]), MAX_TRIES, DELAY_BETWEEN_TRIES));
+                    promises.push(BIT.SDS.Promise.retry(closeAppInstance.createDelegate(this, [appInstance]), MAX_TRIES, DELAY_BETWEEN_TRIES));
                 }, this);
 
-                return BIT.SDS.Promise.all(promisesForAppInstances);
+                return BIT.SDS.Promise.all(promises);
             }
 
             function closeAppInstance(appInstance) {
@@ -719,10 +719,10 @@ Ext.define("BIT.SDS.WindowUtil",
             }, this);
 
             Ext.each(appNamesForClose, function(appName) {
-                promisesFromCloseApp.push(closeApp(appName));
+                promises.push(closeApp(appName));
             }, this);
 
-            return BIT.SDS.Promise.all(promisesFromCloseApp);
+            return BIT.SDS.Promise.all(promises);
         },
 
         getAndAddDelayForAsyncAction: function(delayToAdd) {
@@ -994,7 +994,7 @@ Ext.define("BIT.SDS.WindowUtil",
             var OPEN_TIMEOUT         = 30000;
 
             var appNamesForOpen = [];
-            var promisesFromOpenApp = [];
+            var promisesForAppInstance = [];
 
             function openApp(appName) {
                 var delay;
@@ -1039,10 +1039,10 @@ Ext.define("BIT.SDS.WindowUtil",
             }, this);
 
             Ext.each(appNamesForOpen, function(appName) {
-                promisesFromOpenApp.push(BIT.SDS.Promise.retry(openApp.createDelegate(this, [appName]), MAX_TRIES, DELAY_BETWEEN_TRIES));
+                promisesForAppInstance.push(BIT.SDS.Promise.retry(openApp.createDelegate(this, [appName]), MAX_TRIES, DELAY_BETWEEN_TRIES));
             }, this);
 
-            return BIT.SDS.Promise.all(promisesFromOpenApp);
+            return BIT.SDS.Promise.all(promisesForAppInstance);
         },
 
         /**
