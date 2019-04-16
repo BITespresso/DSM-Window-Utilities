@@ -846,8 +846,9 @@ Ext.define("BIT.SDS.WindowUtil",
         },
 
         /**
-         * Returns `true` if the provided application can open a window on the DSM desktop and is
-         * available for the DSM version currently installed on the DiskStation.
+         * Returns `true` if the provided application name is an application that can open a window
+         * on the DSM desktop and is available for the DSM version currently installed on the
+         * DiskStation.
          *
          * @param      {string}   appName  The application name.
          * @return     {boolean}  `true` if valid, `false` otherwise.
