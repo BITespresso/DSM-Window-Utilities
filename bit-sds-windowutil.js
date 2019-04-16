@@ -984,7 +984,7 @@ Ext.define("BIT.SDS.WindowUtil",
          *
          * Please note that already running applications will not be opened by this method.
          *
-         * Launching the application(s) is an asychronous operation, therefore this method returns a
+         * Opening the application(s) is an asychronous operation, therefore this method returns a
          * promise that is fulfilled with an array of `SYNO.SDS.AppInstance` objects.
          *
          * If you call this method without providing `appNames`, all applications that can open a
@@ -994,33 +994,62 @@ Ext.define("BIT.SDS.WindowUtil",
          * @return     {BIT.SDS.Promise}  A promise for an array of `SYNO.SDS.AppInstance` objects.
          */
         open: function(appNames) {
-            var appNamesForLaunch = [];
-            var promises = [];
+            var MAX_TRIES            =     3;
+            var DELAY_BETWEEN_TRIES  = 10000;
+            var DELAY_AFTER_OPEN     =  1000;
+            var DELAY_BEFORE_RESOLVE =  2000;
+            var OPEN_TIMEOUT         = 30000;
+
+            var appNamesForOpen = [];
+            var promisesFromOpenApp = [];
+
+            function openApp(appName) {
+                var delay;
+                var promiseForAppInstance;
+                var rejectAfterTimeoutPromise;
+
+                delay = BIT.SDS.WindowUtil.getAndAddDelayForAsyncAction(DELAY_AFTER_OPEN);
+
+                promiseForAppInstance = new BIT.SDS.Promise(function(resolve, reject) {
+                    SYNO.SDS.AppLaunch.defer(delay, this, [appName, {}, false, function(appInstance) {
+                        var oldInstances;
+
+                        if (appInstance) {
+                            resolve.defer(DELAY_BEFORE_RESOLVE, this, [appInstance]);
+                        } else {
+                            oldInstances = SYNO.SDS.AppMgr.getByAppName(appName);
+
+                            if (oldInstances.length > 0) {
+                                resolve.defer(DELAY_BEFORE_RESOLVE, this, [oldInstances[oldInstances.length - 1]]);
+                            } else {
+                                reject();
+                            }
+                        }
+                    }, this]);
+                });
+
+                rejectAfterTimeoutPromise = new BIT.SDS.Promise(function(resolve, reject) {
+                    setTimeout(function() {
+                        reject();
+                    }, delay + OPEN_TIMEOUT);
+                });
+
+                return BIT.SDS.Promise.race([promiseForAppInstance, rejectAfterTimeoutPromise]);
+            }
 
             if (appNames === undefined) appNames = BIT.SDS.WindowUtil.getAppNamesForDsmVersion();
 
             Ext.each(appNames, function(appName) {
                 if ((BIT.SDS.WindowUtil.getAppNamesForDsmVersion().indexOf(appName) !== -1) && BIT.SDS.WindowUtil.isInstalled(appName) && (SYNO.SDS.AppMgr.getByAppName(appName).length === 0)) {
-                    appNamesForLaunch.push(appName);
+                    appNamesForOpen.push(appName);
                 }
             }, this);
 
-            Ext.each(appNamesForLaunch, function(appName) {
-                promises.push(BIT.SDS.AppMgr.launch(appName));
+            Ext.each(appNamesForOpen, function(appName) {
+                promisesFromOpenApp.push(BIT.SDS.Promise.retry(openApp.createDelegate(this, [appName]), MAX_TRIES, DELAY_BETWEEN_TRIES));
             }, this);
 
-            return BIT.SDS.Promise.all(promises)
-                .then(function(appInstancesOrNulls) {
-                    var appInstances = [];
-
-                    Ext.each(appInstancesOrNulls, function (appInstance) {
-                        if (appInstance) {
-                            appInstances.push(appInstance);
-                        }
-                    }, this);
-
-                    return appInstances;
-                });
+            return BIT.SDS.Promise.all(promisesFromOpenApp);
         },
 
         /**
