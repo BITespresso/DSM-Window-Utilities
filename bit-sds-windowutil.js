@@ -625,7 +625,7 @@ Ext.define("BIT.SDS.WindowUtil",
             if (appNames === undefined) appNames = BIT.SDS.WindowUtil.getAppNamesForDsmVersion();
 
             Ext.each(appNames, function(appName) {
-                if ((BIT.SDS.WindowUtil.getAppNamesForDsmVersion().indexOf(appName) !== -1) && BIT.SDS.WindowUtil.isInstalled(appName) && (SYNO.SDS.AppMgr.getByAppName(appName).length > 0)) {
+                if (BIT.SDS.WindowUtil.isAppName(appName) && BIT.SDS.WindowUtil.isInstalled(appName) && (SYNO.SDS.AppMgr.getByAppName(appName).length > 0)) {
                     appNamesForClose.push(appName);
                 }
             }, this);
@@ -782,7 +782,7 @@ Ext.define("BIT.SDS.WindowUtil",
             if (appNames === undefined) appNames = BIT.SDS.WindowUtil.getAppNamesForDsmVersion();
 
             Ext.each(appNames, function(appName) {
-                if ((BIT.SDS.WindowUtil.getAppNamesForDsmVersion().indexOf(appName) !== -1) && BIT.SDS.WindowUtil.isInstalled(appName) && (SYNO.SDS.AppMgr.getByAppName(appName).length === 0)) {
+                if (BIT.SDS.WindowUtil.isAppName(appName) && BIT.SDS.WindowUtil.isInstalled(appName) && (SYNO.SDS.AppMgr.getByAppName(appName).length === 0)) {
                     appNamesForResetAndOpen.push(appName);
                 }
             }, this);
@@ -833,6 +833,17 @@ Ext.define("BIT.SDS.WindowUtil",
             }
 
             return restoreSizePosPropertyName;
+        },
+
+        /**
+         * Returns `true` if the provided application can open a window on the DSM desktop and is
+         * available for the DSM version currently installed on the DiskStation.
+         *
+         * @param      {string}   appName  The application name.
+         * @return     {boolean}  `true` if valid, `false` otherwise.
+         */
+        isAppName: function(appName) {
+            return (BIT.SDS.WindowUtil.getAppNamesForDsmVersion().indexOf(appName) !== -1);
         },
 
         /**
@@ -945,7 +956,7 @@ Ext.define("BIT.SDS.WindowUtil",
             if (appNames === undefined) appNames = BIT.SDS.WindowUtil.getAppNamesForDsmVersion();
 
             Ext.each(appNames, function(appName) {
-                if ((BIT.SDS.WindowUtil.getAppNamesForDsmVersion().indexOf(appName) !== -1) && BIT.SDS.WindowUtil.isInstalled(appName) && (SYNO.SDS.AppMgr.getByAppName(appName).length === 0)) {
+                if (BIT.SDS.WindowUtil.isAppName(appName) && BIT.SDS.WindowUtil.isInstalled(appName) && (SYNO.SDS.AppMgr.getByAppName(appName).length === 0)) {
                     appNamesForOpen.push(appName);
                 }
             }, this);
@@ -989,7 +1000,7 @@ Ext.define("BIT.SDS.WindowUtil",
             Ext.each(appNames, function(appName) {
                 var restoreSizePosPropertyName;
 
-                if (BIT.SDS.WindowUtil.getAppNamesForDsmVersion().indexOf(appName) !== -1) {
+                if (BIT.SDS.WindowUtil.isAppName(appName)) {
                     restoreSizePosPropertyName = BIT.SDS.WindowUtil.getRestoreSizePosPropertyName(appName);
                     SYNO.SDS.UserSettings.removeProperty(appName, restoreSizePosPropertyName);
                 }
@@ -1016,7 +1027,7 @@ Ext.define("BIT.SDS.WindowUtil",
             var restoreSizePosPropertyName;
             var restoreSizePos;
 
-            if (BIT.SDS.WindowUtil.getAppNamesForDsmVersion().indexOf(appName) !== -1) {
+            if (BIT.SDS.WindowUtil.isAppName(appName)) {
                 restoreSizePosPropertyName = BIT.SDS.WindowUtil.getRestoreSizePosPropertyName(appName);
                 restoreSizePos = SYNO.SDS.UserSettings.getProperty(appName, restoreSizePosPropertyName) || {};
 
