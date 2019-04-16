@@ -625,7 +625,7 @@ Ext.define("BIT.SDS.WindowUtil",
             if (appNames === undefined) appNames = BIT.SDS.WindowUtil.getAppNamesForDsmVersion();
 
             Ext.each(appNames, function(appName) {
-                if (BIT.SDS.WindowUtil.isAppName(appName) && BIT.SDS.WindowUtil.isInstalled(appName) && (SYNO.SDS.AppMgr.getByAppName(appName).length > 0)) {
+                if (BIT.SDS.WindowUtil.isAppName(appName) && BIT.SDS.WindowUtil.isInstalled(appName) && BIT.SDS.WindowUtil.hasRunningInstance(appName)) {
                     appNamesForClose.push(appName);
                 }
             }, this);
@@ -782,7 +782,7 @@ Ext.define("BIT.SDS.WindowUtil",
             if (appNames === undefined) appNames = BIT.SDS.WindowUtil.getAppNamesForDsmVersion();
 
             Ext.each(appNames, function(appName) {
-                if (BIT.SDS.WindowUtil.isAppName(appName) && BIT.SDS.WindowUtil.isInstalled(appName) && (SYNO.SDS.AppMgr.getByAppName(appName).length === 0)) {
+                if (BIT.SDS.WindowUtil.isAppName(appName) && BIT.SDS.WindowUtil.isInstalled(appName) && !BIT.SDS.WindowUtil.hasRunningInstance(appName)) {
                     appNamesForResetAndOpen.push(appName);
                 }
             }, this);
@@ -833,6 +833,16 @@ Ext.define("BIT.SDS.WindowUtil",
             }
 
             return restoreSizePosPropertyName;
+        },
+
+        /**
+         * Returns `true` if the provided application has at least one running instance.
+         *
+         * @param      {string}   appName  The application name.
+         * @return     {boolean}  `true` if has running instance, `false` otherwise.
+         */
+        hasRunningInstance: function(appName) {
+            return (SYNO.SDS.AppMgr.getByAppName(appName).length > 0);
         },
 
         /**
@@ -956,7 +966,7 @@ Ext.define("BIT.SDS.WindowUtil",
             if (appNames === undefined) appNames = BIT.SDS.WindowUtil.getAppNamesForDsmVersion();
 
             Ext.each(appNames, function(appName) {
-                if (BIT.SDS.WindowUtil.isAppName(appName) && BIT.SDS.WindowUtil.isInstalled(appName) && (SYNO.SDS.AppMgr.getByAppName(appName).length === 0)) {
+                if (BIT.SDS.WindowUtil.isAppName(appName) && BIT.SDS.WindowUtil.isInstalled(appName) && !BIT.SDS.WindowUtil.hasRunningInstance(appName)) {
                     appNamesForOpen.push(appName);
                 }
             }, this);
