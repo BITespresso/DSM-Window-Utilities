@@ -822,7 +822,7 @@ Ext.define("BIT.SDS.WindowUtil",
          * Retrieves the respective default window size(s) of the provided or all application(s).
          *
          * To get the default window size, first the restore size and XY position are reset via
-         * {@link BIT.SDS.WindowUtil.resetRestoreSizeAndPosition}, next the application is launched
+         * {@link BIT.SDS.WindowUtil.resetRestoreSizeAndPosition}, next the application is opened
          * and finally the size of the newly opened application window is retrieved.
          *
          * Therefore please note:
@@ -831,7 +831,7 @@ Ext.define("BIT.SDS.WindowUtil",
          * - The applications must not be running when calling this method.
          * - The current restore size and XY position will be reset for those applications.
          *
-         * Launching the application(s) is an asychronous operation, therefore this method returns a
+         * Opening the application(s) is an asychronous operation, therefore this method returns a
          * promise that is fulfilled with an array of {@link BIT.SDS.WindowUtil~AppWinSize} objects.
          *
          * If you call this method without providing `appNames`, the default window sizes of all
@@ -842,16 +842,8 @@ Ext.define("BIT.SDS.WindowUtil",
          * @return     {BIT.SDS.Promise}  A promise for an array of `AppWinSize` objects.
          */
         getDefaultSize: function(appNames) {
-            var appNamesForLaunch = [];
-            var promises = [];
-
-            if (appNames === undefined) appNames = BIT.SDS.WindowUtil.getAppNamesForDsmVersion();
-
-            Ext.each(appNames, function(appName) {
-                if ((BIT.SDS.WindowUtil.getAppNamesForDsmVersion().indexOf(appName) !== -1) && BIT.SDS.WindowUtil.isInstalled(appName) && (SYNO.SDS.AppMgr.getByAppName(appName).length === 0)) {
-                    appNamesForLaunch.push(appName);
-                }
-            }, this);
+            var appNamesForResetAndOpen = [];
+            var promisesForAppWinsize = [];
 
             function getAppWinSize(appInstance) {
                 var appWindow = appInstance.window;
@@ -875,23 +867,24 @@ Ext.define("BIT.SDS.WindowUtil",
                 return appWinSize;
             }
 
-            Ext.each(appNamesForLaunch, function(appName) {
-                BIT.SDS.WindowUtil.resetRestoreSizeAndPosition(appName);
-                promises.push(BIT.SDS.AppMgr.launch(appName));
+            if (appNames === undefined) appNames = BIT.SDS.WindowUtil.getAppNamesForDsmVersion();
+
+            Ext.each(appNames, function(appName) {
+                if ((BIT.SDS.WindowUtil.getAppNamesForDsmVersion().indexOf(appName) !== -1) && BIT.SDS.WindowUtil.isInstalled(appName) && (SYNO.SDS.AppMgr.getByAppName(appName).length === 0)) {
+                    appNamesForResetAndOpen.push(appName);
+                }
             }, this);
 
-            return BIT.SDS.Promise.all(promises)
-                .then(function(appInstancesOrNulls) {
-                    var appWinSizes = [];
+            Ext.each(appNamesForResetAndOpen, function(appName) {
+                BIT.SDS.WindowUtil.resetRestoreSizeAndPosition(appName);
+                promisesForAppWinsize.push(BIT.SDS.WindowUtil.open(appName)
+                    .then(function(appInstances) {
+                        return getAppWinSize(appInstances[0]);
+                    })
+                );
+            }, this);
 
-                    Ext.each(appInstancesOrNulls, function (appInstance) {
-                        if (appInstance) {
-                            appWinSizes.push(getAppWinSize(appInstance));
-                        }
-                    }, this);
-
-                    return appWinSizes;
-                });
+            return BIT.SDS.Promise.all(promisesForAppWinsize);
         },
 
         /**
