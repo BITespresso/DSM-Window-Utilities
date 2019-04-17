@@ -463,14 +463,15 @@ Ext.define("BIT.SDS.WindowUtil",
          * down for your later information.
          *
          * **Note 1**: Currently open application windows will not change their size and position.
-         * You must close and reopen the windows to see the result. Do not move or resize the
-         * application window beforehand, as this immediately sets the restore size and position to
-         * the current window size and position.
+         * You must close and reopen the application window to see the result. Do not move or resize
+         * the application window beforehand, as this immediately sets the restore size and position
+         * to the current window size and position.
          *
          * **Note 2**: The Synology CMS (Central Management System) application
          * (`SYNO.SDS.CMS.Application`) does not read the restore size and position due to a bug in
          * DSM. To ensure that this window has the correct size and position, each time this method
-         * is called, the window will be opened and set to the correct size and position.
+         * is called, the application will be launched and the window will be set to the correct
+         * size and position.
          *
          * @param      {BIT.SDS.WindowUtil~Bounds}  [bounds]  The bounds.
          *
@@ -734,7 +735,7 @@ Ext.define("BIT.SDS.WindowUtil",
          * Retrieves the respective default window size(s) of the provided or all application(s).
          *
          * To get the default window size, first the restore size and XY position are reset via
-         * {@link BIT.SDS.WindowUtil.resetRestoreSizeAndPosition}, next the application is opened
+         * {@link BIT.SDS.WindowUtil.resetRestoreSizeAndPosition}, next the application is launched
          * and finally the size of the newly opened application window is retrieved.
          *
          * Therefore please note:
@@ -743,7 +744,7 @@ Ext.define("BIT.SDS.WindowUtil",
          * - The applications must not be running when calling this method.
          * - The current restore size and XY position will be reset for those applications.
          *
-         * Opening the application(s) is an asychronous operation, therefore this method returns a
+         * Launching the application(s) is an asychronous operation, therefore this method returns a
          * promise that is fulfilled with an array of {@link BIT.SDS.WindowUtil~AppWinSize} objects.
          *
          * If you call this method without providing `appNames`, the default window sizes of all
@@ -754,7 +755,7 @@ Ext.define("BIT.SDS.WindowUtil",
          * @return     {BIT.SDS.Promise}  A promise for an array of `AppWinSize` objects.
          */
         getDefaultSize: function(appNames) {
-            var appNamesForResetAndOpen = [];
+            var appNamesForResetAndLaunch = [];
             var promisesForAppWinsize = [];
 
             function getAppWinSize(appInstance) {
@@ -783,13 +784,13 @@ Ext.define("BIT.SDS.WindowUtil",
 
             Ext.each(appNames, function(appName) {
                 if (BIT.SDS.WindowUtil.isAppNameForDsmVersion(appName) && BIT.SDS.WindowUtil.isInstalled(appName) && !BIT.SDS.WindowUtil.hasRunningInstance(appName)) {
-                    appNamesForResetAndOpen.push(appName);
+                    appNamesForResetAndLaunch.push(appName);
                 }
             }, this);
 
-            Ext.each(appNamesForResetAndOpen, function(appName) {
+            Ext.each(appNamesForResetAndLaunch, function(appName) {
                 BIT.SDS.WindowUtil.resetRestoreSizeAndPosition(appName);
-                promisesForAppWinsize.push(BIT.SDS.WindowUtil.open(appName)
+                promisesForAppWinsize.push(BIT.SDS.WindowUtil.launch(appName)
                     .then(function(appInstances) {
                         return getAppWinSize(appInstances[0]);
                     })
@@ -868,6 +869,80 @@ Ext.define("BIT.SDS.WindowUtil",
         },
 
         /**
+         * Launches the provided or all application(s).
+         *
+         * Please note that already running applications will not be launched by this method.
+         *
+         * Launching the application(s) is an asychronous operation, therefore this method returns a
+         * promise that is fulfilled with an array of `SYNO.SDS.AppInstance` objects.
+         *
+         * If you call this method without providing `appNames`, all applications that can open a
+         * window on the DSM desktop and are currently installed on the DiskStation will be
+         * launched.
+         *
+         * @param      {string[]|string}  [appNames]  The application name(s).
+         * @return     {BIT.SDS.Promise}  A promise for an array of `SYNO.SDS.AppInstance` objects.
+         */
+        launch: function(appNames) {
+            var MAX_TRIES            =     3;
+            var DELAY_BETWEEN_TRIES  = 10000;
+            var DELAY_AFTER_LAUNCH   =  1000;
+            var DELAY_BEFORE_RESOLVE =  2000;
+            var LAUNCH_TIMEOUT       = 30000;
+
+            var appNamesForLaunch = [];
+            var promisesForAppInstance = [];
+
+            function launchApp(appName) {
+                var delay;
+                var promiseForAppInstance;
+                var rejectAfterTimeoutPromise;
+
+                delay = BIT.SDS.WindowUtil.getAndAddDelayForAsyncAction(DELAY_AFTER_LAUNCH);
+
+                promiseForAppInstance = new BIT.SDS.Promise(function(resolve, reject) {
+                    SYNO.SDS.AppLaunch.defer(delay, this, [appName, {}, false, function(appInstance) {
+                        var oldInstances;
+
+                        if (appInstance) {
+                            resolve.defer(DELAY_BEFORE_RESOLVE, this, [appInstance]);
+                        } else {
+                            oldInstances = SYNO.SDS.AppMgr.getByAppName(appName);
+
+                            if (oldInstances.length > 0) {
+                                resolve.defer(DELAY_BEFORE_RESOLVE, this, [oldInstances[oldInstances.length - 1]]);
+                            } else {
+                                reject();
+                            }
+                        }
+                    }, this]);
+                });
+
+                rejectAfterTimeoutPromise = new BIT.SDS.Promise(function(resolve, reject) {
+                    setTimeout(function() {
+                        reject();
+                    }, delay + LAUNCH_TIMEOUT);
+                });
+
+                return BIT.SDS.Promise.race([promiseForAppInstance, rejectAfterTimeoutPromise]);
+            }
+
+            if (appNames === undefined) appNames = BIT.SDS.WindowUtil.getAppNamesForDsmVersion();
+
+            Ext.each(appNames, function(appName) {
+                if (BIT.SDS.WindowUtil.isAppNameForDsmVersion(appName) && BIT.SDS.WindowUtil.isInstalled(appName) && !BIT.SDS.WindowUtil.hasRunningInstance(appName)) {
+                    appNamesForLaunch.push(appName);
+                }
+            }, this);
+
+            Ext.each(appNamesForLaunch, function(appName) {
+                promisesForAppInstance.push(BIT.SDS.Promise.retry(launchApp.createDelegate(this, [appName]), MAX_TRIES, DELAY_BETWEEN_TRIES));
+            }, this);
+
+            return BIT.SDS.Promise.all(promisesForAppInstance);
+        },
+
+        /**
          * Logs the respective default window size(s) of the provided or all application(s) to the
          * console in CSV format. The record format is: `<application name>,<width>,<height>`
          *
@@ -907,79 +982,6 @@ Ext.define("BIT.SDS.WindowUtil",
         },
 
         /**
-         * Opens the provided or all application(s).
-         *
-         * Please note that already running applications will not be opened by this method.
-         *
-         * Opening the application(s) is an asychronous operation, therefore this method returns a
-         * promise that is fulfilled with an array of `SYNO.SDS.AppInstance` objects.
-         *
-         * If you call this method without providing `appNames`, all applications that can open a
-         * window on the DSM desktop and are currently installed on the DiskStation will be opened.
-         *
-         * @param      {string[]|string}  [appNames]  The application name(s).
-         * @return     {BIT.SDS.Promise}  A promise for an array of `SYNO.SDS.AppInstance` objects.
-         */
-        open: function(appNames) {
-            var MAX_TRIES            =     3;
-            var DELAY_BETWEEN_TRIES  = 10000;
-            var DELAY_AFTER_OPEN     =  1000;
-            var DELAY_BEFORE_RESOLVE =  2000;
-            var OPEN_TIMEOUT         = 30000;
-
-            var appNamesForOpen = [];
-            var promisesForAppInstance = [];
-
-            function openApp(appName) {
-                var delay;
-                var promiseForAppInstance;
-                var rejectAfterTimeoutPromise;
-
-                delay = BIT.SDS.WindowUtil.getAndAddDelayForAsyncAction(DELAY_AFTER_OPEN);
-
-                promiseForAppInstance = new BIT.SDS.Promise(function(resolve, reject) {
-                    SYNO.SDS.AppLaunch.defer(delay, this, [appName, {}, false, function(appInstance) {
-                        var oldInstances;
-
-                        if (appInstance) {
-                            resolve.defer(DELAY_BEFORE_RESOLVE, this, [appInstance]);
-                        } else {
-                            oldInstances = SYNO.SDS.AppMgr.getByAppName(appName);
-
-                            if (oldInstances.length > 0) {
-                                resolve.defer(DELAY_BEFORE_RESOLVE, this, [oldInstances[oldInstances.length - 1]]);
-                            } else {
-                                reject();
-                            }
-                        }
-                    }, this]);
-                });
-
-                rejectAfterTimeoutPromise = new BIT.SDS.Promise(function(resolve, reject) {
-                    setTimeout(function() {
-                        reject();
-                    }, delay + OPEN_TIMEOUT);
-                });
-
-                return BIT.SDS.Promise.race([promiseForAppInstance, rejectAfterTimeoutPromise]);
-            }
-
-            if (appNames === undefined) appNames = BIT.SDS.WindowUtil.getAppNamesForDsmVersion();
-
-            Ext.each(appNames, function(appName) {
-                if (BIT.SDS.WindowUtil.isAppNameForDsmVersion(appName) && BIT.SDS.WindowUtil.isInstalled(appName) && !BIT.SDS.WindowUtil.hasRunningInstance(appName)) {
-                    appNamesForOpen.push(appName);
-                }
-            }, this);
-
-            Ext.each(appNamesForOpen, function(appName) {
-                promisesForAppInstance.push(BIT.SDS.Promise.retry(openApp.createDelegate(this, [appName]), MAX_TRIES, DELAY_BETWEEN_TRIES));
-            }, this);
-
-            return BIT.SDS.Promise.all(promisesForAppInstance);
-        },
-
-        /**
          * Resets the restore size and XY position of the provided application(s).
          *
          * If you call this method without providing `appNames`, all applications that can open a
@@ -987,7 +989,7 @@ Ext.define("BIT.SDS.WindowUtil",
          * the DiskStation will be reset.
          *
          * **Note**: Currently open application windows will not change their size and position. You
-         * must close and reopen the windows to see the result. Do not move or resize the
+         * must close and reopen the application window to see the result. Do not move or resize the
          * application window beforehand, as this immediately sets the restore size and position to
          * the current window size and position.
          *
@@ -1021,10 +1023,10 @@ Ext.define("BIT.SDS.WindowUtil",
         /**
          * Sets the restore page XY position of the provided application.
          *
-         * **Note**: Currently open application windows will not change their position. You must
-         * close and reopen the windows to see the result. Do not move or resize the application
-         * window beforehand, as this immediately sets the restore position to the current window
-         * position.
+         * **Note**: Currently open application windows will not change their size and position. You
+         * must close and reopen the application window to see the result. Do not move or resize the
+         * application window beforehand, as this immediately sets the restore size and position to
+         * the current window size and position.
          *
          * @param      {string}  appName  The application name.
          * @param      {number}  x        The page x position.
